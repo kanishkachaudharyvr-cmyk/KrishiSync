@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KrishiSync - Farmer ERP & AI Voice Assistant</title>
+    
+    <!-- Google Font: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Modern Glassmorphic Backdrop and Custom Scrollbar */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        .glass-panel-glow {
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+        }
+
+        /* Webkit Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.6);
+        }
+
+        /* Pulse Animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .mic-active-ring {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+
+        /* Highlight animation for updated dashboard cards */
+        @keyframes border-glow-fade {
+            0% { border-color: rgba(16, 185, 129, 1); box-shadow: 0 0 25px rgba(16, 185, 129, 0.7); }
+            100% { border-color: rgba(16, 185, 129, 0.15); box-shadow: none; }
+        }
+        .animate-card-glow {
+            animation: border-glow-fade 3s forwards ease-out;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-100 flex flex-col font-sans overflow-x-hidden selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Top Navigation Bar -->
+    <header class="glass-panel sticky top-0 z-40 border-b border-emerald-950/30 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-900/30">
+                <i class="fa-solid fa-leaf text-slate-950 text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">KrishiSync</h1>
+                <p class="text-[10px] text-emerald-500 font-medium tracking-widest uppercase">Smart Agricultural ERP</p>
+            </div>
+        </div>
+        
+        <div class="hidden md:flex items-center space-x-6 text-sm text-slate-400">
+            <div class="flex items-center space-x-2">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-medium text-emerald-400 text-xs">Live Database Connected</span>
+            </div>
+            <div class="border-l border-slate-800 h-4"></div>
+            <div id="system-time" class="font-mono text-xs">Loading calendar...</div>
+        </div>
+    </header>
+
+    <!-- Main Grid Dashboard Content -->
+    <main class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full pb-28">
+        
+        <!-- COLUMN 1: Weather & Inventory (Left Side, 5 Cols) -->
+        <div class="col-span-1 lg:col-span-5 flex flex-col space-y-6">
+            
+            <!-- SECTION 1: Crop Health & Weather -->
+            <section id="weather-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 flex flex-col relative overflow-hidden group">
+                <!-- Decorative background elements -->
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+                
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                            <i class="fa-solid fa-cloud-sun-rain text-lg"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-200">Crop Health & Weather</h2>
+                    </div>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/20">Real-Time Alerts</span>
+                </div>
+
+                <!-- Weather metrics grid -->
+                <div class="grid grid-cols-2 gap-4 mb-5">
+                    <div class="bg-slate-900/40 border border-slate-800/60 p-4 rounded-2xl flex items-center space-x-3">
+                        <i class="fa-solid fa-temperature-high text-amber-400 text-2xl"></i>
+                        <div>
+                            <p class="text-xs text-slate-400">Temperature</p>
+                            <p id="weather-temp" class="text-lg font-semibold text-slate-200">--°C</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900/40 border border-slate-800/60 p-4 rounded-2xl flex items-center space-x-3">
+                        <i class="fa-solid fa-droplet text-blue-400 text-2xl"></i>
+                        <div>
+                            <p class="text-xs text-slate-400">Humidity</p>
+                            <p id="weather-humidity" class="text-lg font-semibold text-slate-200">--%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weather Status summary -->
+                <div class="mb-4">
+                    <p class="text-xs text-slate-400 font-semibold mb-1 uppercase tracking-wider">Forecast Condition</p>
+                    <p id="weather-forecast" class="text-sm text-slate-300">Loading live forecasts...</p>
+                </div>
+
+                <!-- Alert Advisory Box -->
+                <div class="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start space-x-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+                    <div>
+                        <h4 id="weather-alert-title" class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-1">YELLOW ALERT ACTIVE</h4>
+                        <p id="weather-advisory" class="text-xs text-slate-300 leading-relaxed">Loading pest prevention advisory notes for farmers...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: Inventory Stock Tracker -->
+            <section id="inventory-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 flex-1 flex flex-col group relative overflow-hidden">
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
+
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                            <i class="fa-solid fa-warehouse text-lg"></i>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-200">Inventory & Seed Stock</h2>
+                    </div>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/20">ERP Records</span>
+                </div>
+
+                <!-- Stock Item Levels -->
+                <div id="inventory-list" class="space-y-4 flex-1">
+                    <div class="text-xs text-slate-400 text-center py-6">Loading inventory levels...</div>
+                </div>
+
+                <!-- Quick adjustment form -->
+                <div class="mt-6 pt-4 border-t border-slate-900/60">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Stock Adjust</h3>
+                    <div class="flex space-x-2">
+                        <input id="quick-item-name" type="text" placeholder="e.g. Urea" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 text-slate-100">
+                        <input id="quick-item-qty" type="number" placeholder="Qty" class="bg-slate-900 border border-slate-800 rounded-xl px-2 py-2 text-xs w-20 focus:outline-none focus:border-emerald-500 text-slate-100 text-center">
+                        <button onclick="handleQuickInventoryAdjust()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition duration-200">Update</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- COLUMN 2: Mandi Rates, Finance & Logistics (Right Side, 7 Cols) -->
+        <div class="col-span-1 lg:col-span-7 flex flex-col space-y-6">
+            
+            <!-- SECTION 3: Mandi Price Analytics -->
+            <section id="mandi-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative group overflow-hidden">
+                <div class="absolute -top-12 -left-12 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-500"></div>
+
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                            <i class="fa-solid fa-chart-line text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-200">Mandi Market Rates</h2>
+                            <p class="text-[10px] text-slate-400">Current rate per quintal (₹) across APMC mandis</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Mandi Crop Selector -->
+                    <div class="relative">
+                        <select id="mandi-crop-select" onchange="updateMandiChartForSelectedCrop()" class="bg-slate-900/80 border border-slate-800 text-emerald-400 font-semibold text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                            <option value="Onion">Onion (प्याज)</option>
+                            <option value="Tomato">Tomato (टमाटर)</option>
+                            <option value="Wheat">Wheat (गेहूं)</option>
+                            <option value="Cotton">Cotton (कपास)</option>
+                            <option value="Potato">Potato (आलू)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Price analytics and Chart -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    
+                    <!-- Market Rates List -->
+                    <div id="mandi-rates-list" class="md:col-span-5 space-y-3 max-h-56 overflow-y-auto pr-1">
+                        <!-- Filled by javascript -->
+                    </div>
+
+                    <!-- Chart Container -->
+                    <div class="md:col-span-7 bg-slate-900/30 border border-slate-900/60 p-3 rounded-2xl min-h-[220px] flex items-center justify-center relative">
+                        <canvas id="mandi-chart" class="w-full max-h-[200px]"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: Agri Loan Timelines & Finance -->
+            <section id="loan-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group">
+                <div class="flex items-center space-x-3 mb-4">
+                    <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                        <i class="fa-solid fa-hand-holding-dollar text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-200">Agricultural Loans</h2>
+                        <p class="text-[10px] text-slate-400">Repayment cycles and interest tracker</p>
+                    </div>
+                </div>
+
+                <div id="loans-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Seeded by javascript -->
+                    <div class="text-xs text-slate-400 text-center py-6 col-span-2">Loading active loans...</div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: Logistics & Transport logs -->
+            <section id="logistics-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group flex-1">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
+                            <i class="fa-solid fa-truck-ramp-box text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-200">Logistics & Dispatch Logs</h2>
+                            <p class="text-[10px] text-slate-400">Manage transit logs, track status and vehicles</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-900/60 pb-2">
+                                <th class="py-2 font-semibold">Commodity</th>
+                                <th class="py-2 font-semibold">Quantity</th>
+                                <th class="py-2 font-semibold">Destination</th>
+                                <th class="py-2 font-semibold">Tracking ID</th>
+                                <th class="py-2 font-semibold text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logistics-table-body" class="divide-y divide-slate-900/40 text-slate-300">
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FLOATING VOICE ASSISTANT CARD & BUTTON -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4">
+        
+        <!-- Assistant Dialogue Panel -->
+        <div id="assistant-panel" class="hidden w-[380px] max-w-[calc(100vw-2rem)] glass-panel rounded-3xl p-5 flex flex-col shadow-2xl border-emerald-500/30 transition-all duration-300 overflow-hidden">
+            
+            <!-- Panel Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-900/60 mb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center text-slate-950 font-bold text-sm">
+                        <i class="fa-solid fa-microphone-lines"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-200">KrishiSync Assistant</h3>
+                        <p class="text-[9px] text-emerald-400 font-semibold tracking-wider uppercase">Voice Enabled AI</p>
+                    </div>
+                </div>
+                <button onclick="toggleAssistantPanel(false)" class="text-slate-400 hover:text-slate-200">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Dialogue History Area -->
+            <div id="dialogue-box" class="h-64 overflow-y-auto mb-3 space-y-3 pr-1 text-xs">
+                <!-- AI Welcome Message -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-slate-300">
+                    <p class="font-semibold text-emerald-400 text-[10px] uppercase mb-1">KrishiSync Assistant</p>
+                    <p>Namaskar! Main KrishiSync assistant hoon. Aap regional voice command ya text query ke jariye pure ERP ko control kar sakte hain.</p>
+                </div>
+            </div>
+
+            <!-- Visualizer Canvas during recording -->
+            <div id="visualizer-container" class="hidden bg-slate-950/60 border border-emerald-950 rounded-2xl p-2 mb-3 items-center justify-center h-12">
+                <canvas id="voice-wave-canvas" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Status Info Message -->
+            <p id="assistant-status" class="text-[10px] text-slate-400 mb-2 italic">Ready to assist...</p>
+
+            <!-- Text Query Input Form -->
+            <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 rounded-xl px-2 py-1.5 focus-within:border-emerald-500">
+                <input id="assistant-text-input" type="text" placeholder="Ask details or type command..." class="bg-transparent text-xs w-full focus:outline-none text-slate-100 px-1" onkeypress="handleTextInputKeyPress(event)">
+                <button onclick="sendTextQuery()" class="text-emerald-500 hover:text-emerald-400 p-1 flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+            
+            <!-- Quick Command suggestions for Developer Review -->
+            <div class="mt-3 pt-3 border-t border-slate-900/60">
+                <p class="text-[9px] text-slate-400 font-semibold uppercase mb-1.5">Quick Demo Prompts:</p>
+                <div class="flex flex-wrap gap-1">
+                    <button onclick="mockCommandText('what is the price of onion?')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Onion Prices</button>
+                    <button onclick="mockCommandText('show weather alerts for Nashik')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Weather/Pests</button>
+                    <button onclick="mockCommandText('use 5 bags of urea')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Reduce Urea</button>
+                    <button onclick="mockCommandText('send 50 bags of onion to Mumbai APMC')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Book Truck</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Float Launcher Mic Button -->
+        <div class="relative">
+            <!-- Active recording pulsing ring shadow -->
+            <div id="mic-pulse-ring" class="hidden absolute -inset-1.5 rounded-full bg-emerald-500/30 mic-active-ring z-0"></div>
+            
+            <button id="mic-btn" onclick="handleMicButtonClick()" class="relative z-10 h-14 w-14 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-slate-950 flex items-center justify-center shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all duration-200">
+                <i id="mic-icon" class="fa-solid fa-microphone text-xl"></i>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // Set dynamic date in header
+        document.getElementById('system-time').innerText = new Date().toLocaleDateString('en-IN', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+        });
+
+        // Global Chart Instance
+        let mandiChart = null;
+        let globalDashboardData = null;
+
+        // UI Target mapping colors
+        const SECTION_DOMS = {
+            mandi: 'mandi-section',
+            weather: 'weather-section',
+            inventory: 'inventory-section',
+            assistant: 'assistant-panel'
+        };
+
+        // Initialize components
+        window.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+        });
+
+        // Toggle Assistant dialogue panel view
+        function toggleAssistantPanel(show) {
+            const panel = document.getElementById('assistant-panel');
+            if (show) {
+                panel.classList.remove('hidden');
+                document.getElementById('mic-icon').className = 'fa-solid fa-microphone-lines text-xl';
+            } else {
+                panel.classList.add('hidden');
+                document.getElementById('mic-icon').className = 'fa-solid fa-microphone text-xl';
+            }
+        }
+
+        // Highlight updated section card
+        function highlightTargetCard(sectionKey) {
+            const targetId = SECTION_DOMS[sectionKey];
+            if (!targetId) return;
+            
+            const element = document.getElementById(targetId);
+            if (!element) return;
+
+            // Highlight panel if it's currently visible or flash border
+            element.classList.remove('animate-card-glow');
+            void element.offsetWidth; // Trigger reflow to restart animation
+            element.classList.add('animate-card-glow');
+        }
+
+        // Fetch ERP states on load
+        async function loadDashboardData() {
+            try {
+                const res = await fetch('/api/dashboard-data');
+                const data = await res.json();
+                
+                if (data.status === 'success') {
+                    globalDashboardData = data;
+                    renderWeather(data.weather);
+                    renderInventory(data.inventory);
+                    renderLogistics(data.logistics);
+                    renderLoans(data.loans);
+                    
+                    // Render default Onion chart
+                    updateMandiChartForSelectedCrop();
+                }
+            } catch (err) {
+                console.error("Error loading dashboard data: ", err);
+            }
+        }
+
+        // Render localized weather section
+        function renderWeather(weather) {
+            document.getElementById('weather-temp').innerText = weather.temperature;
+            document.getElementById('weather-humidity').innerText = weather.humidity;
+            document.getElementById('weather-forecast').innerText = weather.forecast;
+            document.getElementById('weather-advisory').innerText = weather.pest_prevention_advisory;
+        }
+
+        // Render inventory status progress levels
+        function renderInventory(inventory) {
+            const container = document.getElementById('inventory-list');
+            container.innerHTML = '';
+            
+            inventory.forEach(item => {
+                // Calculate percentage based on max visual stock level of 100
+                const percent = Math.min(100, Math.max(0, (item.quantity / 100) * 100));
+                
+                // Color levels depending on stock level
+                let colorClass = "bg-emerald-500";
+                if (percent < 20) colorClass = "bg-rose-500 animate-pulse";
+                else if (percent < 50) colorClass = "bg-amber-400";
+
+                const dateStr = item.last_updated ? new Date(item.last_updated).toLocaleTimeString('en-IN', {hour: '2-digit', minute:'2-digit'}) : 'N/A';
+
+                container.innerHTML += `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span class="text-slate-300">${item.item_name}</span>
+                            <span class="text-slate-200">${item.quantity} ${item.unit} <span class="text-[9px] text-slate-500 font-normal">(${dateStr})</span></span>
+                        </div>
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                            <div class="h-full ${colorClass} rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Render logistics log rows
+        function renderLogistics(logistics) {
+            const tbody = document.getElementById('logistics-table-body');
+            tbody.innerHTML = '';
+            
+            if (logistics.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 text-[10px]">No recent dispatches.</td></tr>`;
+                return;
+            }
+
+            logistics.forEach(log => {
+                let statusBadge = "text-amber-400 bg-amber-400/10 border-amber-400/20";
+                if (log.status === "Delivered") {
+                    statusBadge = "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
+                }
+                
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/30 transition-colors duration-150">
+                        <td class="py-3 font-semibold text-slate-200">${log.commodity}</td>
+                        <td class="py-3 text-slate-400">${log.quantity}</td>
+                        <td class="py-3 text-slate-400">${log.destination}</td>
+                        <td class="py-3 font-mono text-[10px] text-slate-400">${log.tracking_id}</td>
+                        <td class="py-3 text-right">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge}">${log.status}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Render agricultural loans
+        function renderLoans(loans) {
+            const container = document.getElementById('loans-list');
+            container.innerHTML = '';
+            
+            loans.forEach(loan => {
+                const interestAmt = (loan.amount * (loan.interest_rate / 100));
+                const totalRepay = loan.amount + interestAmt;
+                
+                container.innerHTML += `
+                    <div class="bg-slate-900/40 border border-slate-900 p-4 rounded-2xl flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-bold text-xs text-slate-200">${loan.bank_name}</h4>
+                                <span class="text-[9px] bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">${loan.status}</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 my-2 text-[10px] text-slate-400">
+                                <div>Loan Principal: <span class="font-semibold text-slate-200">₹${loan.amount.toLocaleString()}</span></div>
+                                <div>Rate: <span class="font-semibold text-slate-200">${loan.interest_rate}% p.a.</span></div>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-slate-950 flex justify-between items-center text-[10px]">
+                            <span class="text-slate-400">Due: <strong class="text-amber-400">${loan.due_date}</strong></span>
+                            <span class="text-slate-300">Total Repay: <strong>₹${totalRepay.toLocaleString()}</strong></span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Draw market prices lists and sync Chart.js
+        function updateMandiChartForSelectedCrop() {
+            if (!globalDashboardData) return;
+            
+            const cropSelector = document.getElementById('mandi-crop-select');
+            const selectedCrop = cropSelector.value;
+            
+            const matchedPrices = globalDashboardData.market_prices.filter(p => 
+                p.crop_name.toLowerCase() === selectedCrop.toLowerCase()
+            );
+
+            const ratesContainer = document.getElementById('mandi-rates-list');
+            ratesContainer.innerHTML = '';
+
+            const chartLabels = [];
+            const chartData = [];
+
+            matchedPrices.forEach(p => {
+                chartLabels.push(p.market_name.split(' ')[0]); // Get abbreviation/short name
+                chartData.push(p.price_per_quintal);
+
+                ratesContainer.innerHTML += `
+                    <div class="bg-slate-900/50 hover:bg-slate-900 border border-slate-800/80 px-3 py-2 rounded-xl flex items-center justify-between transition-colors duration-200">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-200">${p.market_name}</p>
+                            <p class="text-[9px] text-emerald-400 font-semibold tracking-wide uppercase">APMC mandi</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-amber-300">₹${p.price_per_quintal.toLocaleString()}</p>
+                            <p class="text-[9px] text-slate-400">per Quintal</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Initialize or Redraw Chart.js
+            const ctx = document.getElementById('mandi-chart').getContext('2d');
+            
+            if (mandiChart) {
+                mandiChart.destroy();
+            }
+
+            mandiChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: `${selectedCrop} (₹/Quintal)`,
+                        data: chartData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.25)',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        hoverBackgroundColor: 'rgba(16, 185, 129, 0.55)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 9 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 9 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // QUICK ACTION: Call inventory adjustment directly
+        async function handleQuickInventoryAdjust() {
+            const item = document.getElementById('quick-item-name').value.trim();
+            const qty = parseFloat(document.getElementById('quick-item-qty').value);
+            
+            if (!item || isNaN(qty)) {
+                alert("Please enter a valid item name and quantity quantity.");
+                return;
+            }
+
+            try {
+                const command = `update inventory ${item} by ${qty}`;
+                postTextQueryToAgent(command);
+                
+                // Clear inputs
+                document.getElementById('quick-item-name').value = '';
+                document.getElementById('quick-item-qty').value = '';
+            } catch(e) {
+                console.error("Adjustment error: ", e);
+            }
+        }
+
+        // TEXT COMMAND EXECUTION
+        function handleTextInputKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendTextQuery();
+            }
+        }
+
+        function sendTextQuery() {
+            const input = document.getElementById('assistant-text-input');
+            const query = input.value.trim();
+            if (!query) return;
+            
+            postTextQueryToAgent(query);
+            input.value = '';
+        }
+
+        function mockCommandText(text) {
+            toggleAssistantPanel(true);
+            postTextQueryToAgent(text);
+        }
+
+        async function postTextQueryToAgent(queryText) {
+            // Append user message bubble
+            appendDialogueBubble('user', queryText);
+            document.getElementById('assistant-status').innerText = "AI Agent planning/thinking...";
+            
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: queryText })
+                });
+                
+                const result = await response.json();
+                handleAgentResponse(result);
+            } catch (err) {
+                console.error("Text command failed: ", err);
+                appendDialogueBubble('assistant', "Gharbado mat, backend processing error hua hai. Kripya check karein server connectivity.");
+                document.getElementById('assistant-status').innerText = "Error encountered.";
+            }
+        }
+
+        // DIALOGUE UI HELPERS
+        function appendDialogueBubble(sender, text) {
+            const box = document.getElementById('dialogue-box');
+            const name = sender === 'user' ? 'You' : 'KrishiSync Assistant';
+            const nameColor = sender === 'user' ? 'text-amber-400' : 'text-emerald-400';
+            const bgClass = sender === 'user' ? 'bg-slate-900/40 border border-slate-900 ml-8' : 'bg-slate-900/80 border border-slate-800 mr-8';
+
+            box.innerHTML += `
+                <div class="${bgClass} rounded-2xl p-3 text-slate-300 transition-all duration-300">
+                    <p class="font-semibold ${nameColor} text-[10px] uppercase mb-1">${name}</p>
+                    <p class="leading-relaxed">${text}</p>
+                </div>
+            `;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // Handle Agent Output Schema and update sections
+        function handleAgentResponse(agentOutput) {
+            const section = agentOutput.target_section;
+            
+            // Append assistant response summary
+            appendDialogueBubble('assistant', agentOutput.friendly_hindi_english_summary);
+            document.getElementById('assistant-status').innerText = agentOutput.display_title;
+
+            // Highlight target card
+            highlightTargetCard(section);
+
+            // Dynamically sync specific sections
+            if (section === 'mandi') {
+                const cropName = agentOutput.structured_data.crop_name;
+                if (cropName) {
+                    const selector = document.getElementById('mandi-crop-select');
+                    // Look through crop choices and set current select dropdown
+                    for (let i=0; i < selector.options.length; i++) {
+                        if (selector.options[i].value.toLowerCase() === cropName.toLowerCase()) {
+                            selector.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Reload dashboard metrics to reflect DB modifications made by tools
+            loadDashboardData();
+        }
+
+
+        // SPEECH LAYER: MICROPHONE & WEB AUDIO API
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioCtx = null;
+        let analyser = null;
+        let animationFrameId = null;
+        let streamRef = null;
+
+        function handleMicButtonClick() {
+            const isRecording = document.getElementById('mic-pulse-ring').classList.contains('hidden') === false;
+            
+            if (!isRecording) {
+                // Open assistant panel automatically
+                toggleAssistantPanel(true);
+                startVoiceRecording();
+            } else {
+                stopVoiceRecording();
+            }
+        }
+
+        async function startVoiceRecording() {
+            audioChunks = [];
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                streamRef = stream;
+                
+                // Show visualizers and pulse ring
+                document.getElementById('mic-pulse-ring').classList.remove('hidden');
+                document.getElementById('visualizer-container').classList.remove('hidden');
+                document.getElementById('visualizer-container').classList.add('flex');
+                document.getElementById('assistant-status').innerText = "Listening to farmer voice...";
+                document.getElementById('mic-icon').className = 'fa-solid fa-circle-stop text-slate-950 text-xl animate-pulse';
+
+                // Initialize native Web Audio API Visualizer
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaStreamSource(stream);
+                analyser = audioCtx.createAnalyser();
+                analyser.fftSize = 256;
+                source.connect(analyser);
+
+                drawWaveform();
+
+                // Start media recorder
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) {
+                        audioChunks.push(e.data);
+                    }
+                };
+                mediaRecorder.onstop = uploadVoiceData;
+                mediaRecorder.start();
+
+            } catch (err) {
+                console.error("Microphone access blocked or failed: ", err);
+                appendDialogueBubble('assistant', "Microphone access block hua hai. Kripya microhpone allow karein ya manual commands text input box me type karein.");
+                document.getElementById('assistant-status').innerText = "Microphone failed.";
+                stopAudioVisuals();
+            }
+        }
+
+        function stopVoiceRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            if (streamRef) {
+                streamRef.getTracks().forEach(track => track.stop());
+            }
+            stopAudioVisuals();
+        }
+
+        function stopAudioVisuals() {
+            document.getElementById('mic-pulse-ring').add('hidden');
+            document.getElementById('visualizer-container').classList.add('hidden');
+            document.getElementById('visualizer-container').classList.remove('flex');
+            document.getElementById('mic-icon').className = 'fa-solid fa-microphone-lines text-xl';
+            
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            if (audioCtx) {
+                audioCtx.close();
+            }
+        }
+
+        // Draw frequency wave onto voice panel canvas
+        function drawWaveform() {
+            const canvas = document.getElementById('voice-wave-canvas');
+            const canvasCtx = canvas.getContext('2d');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                animationFrameId = requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+
+                canvasCtx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const barWidth = (canvas.width / bufferLength) * 2.5;
+                let barHeight;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    barHeight = dataArray[i] / 2;
+
+                    // Radiant emerald green to golden wave bars
+                    canvasCtx.fillStyle = `rgb(${16 + barHeight}, 185, 129)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+                    x += barWidth + 1;
+                }
+            }
+            draw();
+        }
+
+        // Upload recorded speech voice to endpoint
+        async function uploadVoiceData() {
+            document.getElementById('assistant-status').innerText = "Transcribing voice via Sarvam AI...";
+            
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('file', audioBlob, 'recording.wav');
+
+            try {
+                const response = await fetch('/api/voice', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                handleAgentResponse(result);
+            } catch (err) {
+                console.error("Voice translation upload failed: ", err);
+                appendDialogueBubble('assistant', "Sarvam Voice transcription and Agent analysis failed. Let's fall back to default onion queries.");
+                document.getElementById('assistant-status').innerText = "Voice API Error.";
+            }
+        }
+    </script>
+</body>
+</html>
