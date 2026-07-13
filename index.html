@@ -439,6 +439,11 @@
         let globalDashboardData = null;
         let activeFarmer = null;
 
+        // Determine API Base URL dynamically
+        const API_BASE = (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://127.0.0.1:8000'
+            : '';
+
         // UI Target mapping colors
         const SECTION_DOMS = {
             Mandi: 'mandi-section',
@@ -505,7 +510,7 @@
             }
 
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phone_number: phone })
@@ -541,7 +546,7 @@
             }
 
             try {
-                const response = await fetch('/api/auth/register', {
+                const response = await fetch(`${API_BASE}/api/auth/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -612,7 +617,7 @@
 
         async function loadDashboardData() {
             try {
-                const res = await secureFetch('/api/dashboard-data');
+                const res = await secureFetch(`${API_BASE}/api/dashboard-data`);
                 const data = await res.json();
                 
                 if (data.status === 'success') {
@@ -816,7 +821,7 @@
             document.getElementById('assistant-status').innerText = "AI Agent planning/thinking...";
             
             try {
-                const response = await secureFetch('/api/query', {
+                const response = await secureFetch(`${API_BASE}/api/query`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query: queryText })
@@ -1014,7 +1019,7 @@
             formData.append('file', audioBlob, 'recording.wav');
 
             try {
-                const response = await secureFetch('/api/voice', {
+                const response = await secureFetch(`${API_BASE}/api/voice`, {
                     method: 'POST',
                     body: formData
                 });
