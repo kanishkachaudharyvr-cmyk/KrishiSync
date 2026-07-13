@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KrishiSync - Farmer ERP & AI Voice Assistant</title>
+    <title>KrishiSync - Farmer ERP & AI Voice Hub</title>
     
     <!-- Google Font: Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,7 +31,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Modern Glassmorphic Backdrop and Custom Scrollbar */
+        /* Glassmorphic Backdrop and Glows */
         .glass-panel {
             background: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(12px);
@@ -44,7 +44,7 @@
             box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
         }
 
-        /* Webkit Scrollbar styling */
+        /* Webkit Scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -60,7 +60,7 @@
             background: rgba(16, 185, 129, 0.6);
         }
 
-        /* Pulse Animations */
+        /* Pulse and glows */
         @keyframes pulse-ring {
             0% { transform: scale(0.95); opacity: 0.8; }
             50% { transform: scale(1.1); opacity: 0.4; }
@@ -70,7 +70,6 @@
             animation: pulse-ring 2s infinite ease-in-out;
         }
 
-        /* Highlight animation for updated dashboard cards */
         @keyframes border-glow-fade {
             0% { border-color: rgba(16, 185, 129, 1); box-shadow: 0 0 25px rgba(16, 185, 129, 0.7); }
             100% { border-color: rgba(16, 185, 129, 0.15); box-shadow: none; }
@@ -82,7 +81,7 @@
 </head>
 <body class="h-full text-slate-100 flex flex-col font-sans overflow-x-hidden selection:bg-emerald-500 selection:text-slate-950">
 
-    <!-- AUTHENTICATION DIALOGUE MODAL (LOGIN & REGISTRATION PORTAL) -->
+    <!-- PHONE AUTH OVERLAY -->
     <div id="auth-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-lg transition-opacity duration-300">
         <div class="glass-panel w-full max-w-md p-8 rounded-3xl border border-emerald-500/20 shadow-2xl relative">
             <div class="text-center mb-6">
@@ -90,7 +89,7 @@
                     <i class="fa-solid fa-leaf text-slate-950 text-2xl"></i>
                 </div>
                 <h2 class="text-2xl font-bold tracking-tight text-slate-100">Welcome to KrishiSync</h2>
-                <p class="text-xs text-slate-400 mt-1">Unified Farmer ERP & AI Voice Hub</p>
+                <p class="text-xs text-slate-400 mt-1">Multi-Lingual Farmer ERP & Dispatch Hub</p>
             </div>
 
             <!-- Error Banner -->
@@ -99,29 +98,25 @@
                 <span id="auth-error-text">Authentication Error details...</span>
             </div>
 
-            <!-- Tabs -->
-            <div class="flex border-b border-slate-800 mb-6">
-                <button id="tab-login" onclick="showLoginStep()" class="w-1/2 pb-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-400 transition-all duration-200">Login</button>
-                <button id="tab-register" onclick="showRegisterStep()" class="w-1/2 pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all duration-200">Register</button>
-            </div>
-
-            <!-- Form Step 1: Login Check -->
+            <!-- Form Step 1: Login Phone Check -->
             <div id="auth-step-login" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Email ID</label>
-                    <input id="auth-email" type="email" placeholder="e.g. farmer@krishisync.com" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-100 font-mono">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Mobile Phone Number</label>
+                    <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 focus-within:border-emerald-500">
+                        <span class="text-slate-500 text-sm font-semibold mr-2">+91</span>
+                        <input id="auth-phone" type="tel" placeholder="9876543210" class="bg-transparent text-sm w-full focus:outline-none text-slate-100 font-mono tracking-wider">
+                    </div>
                 </div>
-                <button onclick="handleAuthLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200 flex items-center justify-center space-x-2">
+                <button onclick="handlePhoneLoginCheck()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200 flex items-center justify-center space-x-2">
                     <span>Access ERP Account</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>
 
-            <!-- Form Step 2: Farmer Onboarding Registration -->
+            <!-- Form Step 2: Farmer Registration -->
             <div id="auth-step-register" class="hidden space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Email ID</label>
-                    <input id="reg-email" type="email" placeholder="e.g. farmer@krishisync.com" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-100 font-mono">
+                <div class="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] rounded-xl p-3 mb-2">
+                    <i class="fa-solid fa-user-plus mr-1"></i> Phone number not registered. Please complete onboarding.
                 </div>
                 
                 <div>
@@ -142,7 +137,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Preferred Language</label>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Language</label>
                         <select id="reg-lang" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-300 cursor-pointer">
                             <option value="Hindi">Hindi (हिंदी)</option>
                             <option value="Marathi">Marathi (मराठी)</option>
@@ -153,18 +148,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Farm Land Size (Acres)</label>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Farm Size (Acres)</label>
                     <input id="reg-land" type="number" step="0.1" placeholder="e.g. 5.5" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-100">
                 </div>
 
-                <div class="pt-2">
-                    <button onclick="handleAuthRegister()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200">Register & Onboard Account</button>
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="showLoginStep()" class="w-1/3 bg-slate-900 border border-slate-850 hover:bg-slate-850 text-slate-300 font-bold py-3 rounded-xl text-sm transition duration-200">Back</button>
+                    <button onclick="handlePhoneRegister()" class="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200">Complete Onboarding</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Top Navigation Bar -->
+    <!-- Navigation Header -->
     <header class="glass-panel sticky top-0 z-40 border-b border-emerald-950/30 px-6 py-4 flex items-center justify-between">
         <div class="flex items-center space-x-3">
             <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-900/30">
@@ -172,7 +168,7 @@
             </div>
             <div>
                 <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-amber-300 bg-clip-text text-transparent">KrishiSync</h1>
-                <p class="text-[10px] text-emerald-500 font-medium tracking-widest uppercase">Smart Agricultural ERP</p>
+                <p class="text-[10px] text-emerald-500 font-medium tracking-widest uppercase">Farmer Operations Portal</p>
             </div>
         </div>
         
@@ -189,24 +185,18 @@
                 </button>
             </div>
 
-            <div class="hidden md:flex items-center space-x-2">
-                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span class="font-medium text-emerald-400 text-xs">Live Database Connected</span>
-            </div>
-            <div class="border-l border-slate-800 h-4 hidden md:block"></div>
-            <div id="system-time" class="font-mono text-xs">Loading calendar...</div>
+            <div id="system-time" class="font-mono text-xs hidden sm:block">Date</div>
         </div>
     </header>
 
     <!-- Main Grid Dashboard Content -->
     <main class="flex-1 p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full pb-28">
         
-        <!-- COLUMN 1: Weather & Inventory (Left Side, 5 Cols) -->
+        <!-- COLUMN 1: weather & inventory (Left Side, 5 Cols) -->
         <div class="col-span-1 lg:col-span-5 flex flex-col space-y-6">
             
             <!-- SECTION 1: Crop Health & Weather -->
             <section id="weather-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 flex flex-col relative overflow-hidden group">
-                <!-- Decorative background elements -->
                 <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
                 
                 <div class="flex justify-between items-start mb-4">
@@ -216,31 +206,29 @@
                         </div>
                         <h2 class="text-lg font-bold text-slate-200">Crop Health & Weather</h2>
                     </div>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/20">Real-Time Alerts</span>
                 </div>
 
-                <!-- Weather metrics grid -->
+                <!-- Weather metrics -->
                 <div class="grid grid-cols-2 gap-4 mb-5">
                     <div class="bg-slate-900/40 border border-slate-800/60 p-4 rounded-2xl flex items-center space-x-3">
                         <i class="fa-solid fa-temperature-high text-amber-400 text-2xl"></i>
                         <div>
                             <p class="text-xs text-slate-400">Temperature</p>
-                            <p id="weather-temp" class="text-lg font-semibold text-slate-200">--°C</p>
+                            <p id="weather-temp" class="text-base font-semibold text-slate-200">--°C</p>
                         </div>
                     </div>
                     <div class="bg-slate-900/40 border border-slate-800/60 p-4 rounded-2xl flex items-center space-x-3">
                         <i class="fa-solid fa-droplet text-blue-400 text-2xl"></i>
                         <div>
                             <p class="text-xs text-slate-400">Humidity</p>
-                            <p id="weather-humidity" class="text-lg font-semibold text-slate-200">--%</p>
+                            <p id="weather-humidity" class="text-base font-semibold text-slate-200">--%</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Weather Status summary -->
                 <div class="mb-4">
                     <p class="text-xs text-slate-400 font-semibold mb-1 uppercase tracking-wider">Forecast Condition</p>
-                    <p id="weather-forecast" class="text-sm text-slate-300 font-medium">Loading live forecasts...</p>
+                    <p id="weather-forecast" class="text-sm text-slate-300">Isolated rain expected...</p>
                 </div>
 
                 <!-- Alert Advisory Box -->
@@ -248,7 +236,7 @@
                     <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 animate-bounce"></i>
                     <div>
                         <h4 id="weather-alert-title" class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-1">YELLOW ALERT ACTIVE</h4>
-                        <p id="weather-advisory" class="text-xs text-slate-300 leading-relaxed">Loading pest prevention advisory notes for farmers...</p>
+                        <p id="weather-advisory" class="text-xs text-slate-300 leading-relaxed">Loading advisories...</p>
                     </div>
                 </div>
             </section>
@@ -262,32 +250,20 @@
                         <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
                             <i class="fa-solid fa-warehouse text-lg"></i>
                         </div>
-                        <h2 class="text-lg font-bold text-slate-200">Inventory & Seed Stock</h2>
+                        <h2 class="text-lg font-bold text-slate-200">Stock Control (ERP)</h2>
                     </div>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/20">Private Scoped Records</span>
                 </div>
 
-                <!-- Stock Item Levels -->
                 <div id="inventory-list" class="space-y-4 flex-1">
                     <div class="text-xs text-slate-400 text-center py-6">Loading inventory levels...</div>
-                </div>
-
-                <!-- Quick adjustment form -->
-                <div class="mt-6 pt-4 border-t border-slate-900/60">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Stock Adjust</h3>
-                    <div class="flex space-x-2">
-                        <input id="quick-item-name" type="text" placeholder="e.g. Urea" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 text-slate-100">
-                        <input id="quick-item-qty" type="number" placeholder="Qty" class="bg-slate-900 border border-slate-800 rounded-xl px-2 py-2 text-xs w-20 focus:outline-none focus:border-emerald-500 text-slate-100 text-center">
-                        <button onclick="handleQuickInventoryAdjust()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition duration-200">Update</button>
-                    </div>
                 </div>
             </section>
         </div>
 
-        <!-- COLUMN 2: Mandi Rates, Finance & Logistics (Right Side, 7 Cols) -->
+        <!-- COLUMN 2: Mandi Logistics, Price Estimator & Geotrack (Right Side, 7 Cols) -->
         <div class="col-span-1 lg:col-span-7 flex flex-col space-y-6">
             
-            <!-- SECTION 3: Mandi Price Analytics -->
+            <!-- SECTION 3: Mandi Price Estimator & Calculator -->
             <section id="mandi-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative group overflow-hidden">
                 <div class="absolute -top-12 -left-12 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-500"></div>
 
@@ -297,14 +273,17 @@
                             <i class="fa-solid fa-chart-line text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-lg font-bold text-slate-200">Mandi Market Rates</h2>
-                            <p class="text-[10px] text-slate-400">Current rate per quintal (₹) across APMC mandis</p>
+                            <h2 class="text-lg font-bold text-slate-200">Mandi Estimator & Logistics</h2>
+                            <p class="text-[10px] text-slate-400">Simulate prices, payouts, and dispatch bookings</p>
                         </div>
                     </div>
-                    
-                    <!-- Mandi Crop Selector -->
-                    <div class="relative">
-                        <select id="mandi-crop-select" onchange="updateMandiChartForSelectedCrop()" class="bg-slate-900/80 border border-slate-800 text-emerald-400 font-semibold text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                </div>
+
+                <!-- Price Estimator Widget Form -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Select Crop</label>
+                        <select id="est-crop" class="bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 text-slate-200">
                             <option value="Onion">Onion (प्याज)</option>
                             <option value="Tomato">Tomato (टमाटर)</option>
                             <option value="Wheat">Wheat (गेहूं)</option>
@@ -312,24 +291,43 @@
                             <option value="Potato">Potato (आलू)</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Weight (Quintals)</label>
+                        <input id="est-qty" type="number" value="10" min="1" class="bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 text-slate-100">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Quality Grade</label>
+                        <select id="est-grade" class="bg-slate-950 border border-slate-850 rounded-xl px-3 py-2 text-xs w-full focus:outline-none focus:border-emerald-500 text-slate-200">
+                            <option value="Premium">Premium (बढ़िया)</option>
+                            <option value="Standard" selected>Standard (सामान्य)</option>
+                            <option value="Fair">Fair (कमजोर)</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Estimate Actions -->
+                    <div class="md:col-span-3 flex justify-between items-center pt-3 border-t border-slate-850">
+                        <div id="estimator-output" class="text-xs text-slate-400">
+                            Rate: <strong class="text-amber-400">--</strong> | Total Payout: <strong class="text-emerald-400">--</strong>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="calculateManualEstimate()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-200 font-bold px-3 py-2 rounded-xl text-xs transition duration-200">Estimate</button>
+                            <button onclick="bookManualOrder()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition duration-200">Book Dispatch</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Price analytics and Chart -->
+                <!-- Price trends Chart -->
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                    
-                    <!-- Market Rates List -->
-                    <div id="mandi-rates-list" class="md:col-span-5 space-y-3 max-h-56 overflow-y-auto pr-1">
-                        <!-- Filled by javascript -->
+                    <div id="mandi-rates-list" class="md:col-span-5 space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Filled dynamically -->
                     </div>
-
-                    <!-- Chart Container -->
-                    <div class="md:col-span-7 bg-slate-900/30 border border-slate-900/60 p-3 rounded-2xl min-h-[220px] flex items-center justify-center relative">
-                        <canvas id="mandi-chart" class="w-full max-h-[200px]"></canvas>
+                    <div class="md:col-span-7 bg-slate-900/30 border border-slate-900/60 p-3 rounded-2xl min-h-[180px] flex items-center justify-center relative">
+                        <canvas id="mandi-chart" class="w-full max-h-[160px]"></canvas>
                     </div>
                 </div>
             </section>
 
-            <!-- SECTION 4: Logistics & Transport logs -->
+            <!-- SECTION 4: Live Logistics Dispatch & Geospatial Tracking -->
             <section id="logistics-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group flex-1">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center space-x-3">
@@ -337,24 +335,50 @@
                             <i class="fa-solid fa-truck-ramp-box text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-lg font-bold text-slate-200">Logistics & Transit Tickets</h2>
-                            <p class="text-[10px] text-slate-400">Manage transit logs, track status and vehicles</p>
+                            <h2 class="text-lg font-bold text-slate-200">Active Transit Telemetry</h2>
+                            <p class="text-[10px] text-slate-400">Successive clicks on "Track Shipment" mock real-time vehicle movement</p>
                         </div>
                     </div>
                 </div>
 
+                <!-- Active tracking view widget -->
+                <div id="live-tracking-widget" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 p-4 rounded-2xl bg-emerald-950/10 border border-emerald-900/20 items-center">
+                    <div class="md:col-span-2">
+                        <div class="flex justify-between items-center mb-1 text-xs">
+                            <span class="text-emerald-400 font-bold" id="track-crop-label">Lot --</span>
+                            <span class="text-slate-400 font-mono" id="track-gps-label">GPS: --, --</span>
+                        </div>
+                        <!-- Progress bar -->
+                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                            <div id="track-progress-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div class="flex justify-between text-[9px] text-slate-500 mt-1">
+                            <span>Origin: Nashik Hub</span>
+                            <span id="track-dest-label">Dest: Mumbai APMC</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <button id="track-btn" onclick="triggerGeoTrackerUpdate()" class="w-full bg-emerald-500/15 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 font-bold py-2 rounded-xl text-xs transition duration-200 flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-location-crosshairs animate-pulse"></i>
+                            <span>Track Shipment</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Transit Tickets Logs -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead>
                             <tr class="text-slate-400 border-b border-slate-900/60 pb-2">
-                                <th class="py-2 font-semibold">Commodity</th>
+                                <th class="py-2 font-semibold">Lot ID</th>
+                                <th class="py-2 font-semibold">Crop</th>
                                 <th class="py-2 font-semibold">Weight</th>
-                                <th class="py-2 font-semibold">Destination</th>
-                                <th class="py-2 font-semibold">Tracking ID</th>
+                                <th class="py-2 font-semibold">Mandi</th>
+                                <th class="py-2 font-semibold">Payout</th>
                                 <th class="py-2 font-semibold text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="logistics-table-body" class="divide-y divide-slate-900/40 text-slate-300">
+                        <tbody id="orders-table-body" class="divide-y divide-slate-900/40 text-slate-300">
                             <!-- Filled dynamically -->
                         </tbody>
                     </table>
@@ -364,7 +388,7 @@
         </div>
     </main>
 
-    <!-- FLOATING VOICE ASSISTANT CARD & BUTTON -->
+    <!-- FLOATING VOICE ASSISTANT -->
     <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4">
         
         <!-- Assistant Dialogue Panel -->
@@ -377,8 +401,8 @@
                         <i class="fa-solid fa-microphone-lines"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-200">KrishiSync Assistant</h3>
-                        <p class="text-[9px] text-emerald-400 font-semibold tracking-wider uppercase">Voice Enabled AI</p>
+                        <h3 class="font-bold text-sm text-slate-200">KrishiSync AI Agent</h3>
+                        <p class="text-[9px] text-emerald-400 font-semibold tracking-wider uppercase">Indic Language Voice Assistant</p>
                     </div>
                 </div>
                 <button onclick="toggleAssistantPanel(false)" class="text-slate-400 hover:text-slate-200">
@@ -386,46 +410,43 @@
                 </button>
             </div>
 
-            <!-- Dialogue History Area -->
-            <div id="dialogue-box" class="h-64 overflow-y-auto mb-3 space-y-3 pr-1 text-xs">
-                <!-- AI Welcome Message -->
+            <!-- Dialogue History -->
+            <div id="dialogue-box" class="h-60 overflow-y-auto mb-3 space-y-3 pr-1 text-xs">
                 <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-3 text-slate-300">
                     <p class="font-semibold text-emerald-400 text-[10px] uppercase mb-1">KrishiSync Assistant</p>
-                    <p id="assistant-welcome-text">Namaskar! Main KrishiSync assistant hoon. Aap regional voice command ya text query ke jariye pure ERP ko control kar sakte hain.</p>
+                    <p id="assistant-welcome-text">Namaskar! Main KrishiSync assistant hoon. Mandi booking, price calculations, ya dispatch orders ke liye regional audio voice command bole or type kare.</p>
                 </div>
             </div>
 
-            <!-- Visualizer Canvas during recording -->
+            <!-- Visualizer wave canvas -->
             <div id="visualizer-container" class="hidden bg-slate-950/60 border border-emerald-950 rounded-2xl p-2 mb-3 items-center justify-center h-12">
                 <canvas id="voice-wave-canvas" class="w-full h-full"></canvas>
             </div>
 
-            <!-- Status Info Message -->
+            <!-- Status msg -->
             <p id="assistant-status" class="text-[10px] text-slate-400 mb-2 italic">Ready to assist...</p>
 
-            <!-- Text Query Input Form -->
+            <!-- Text input fallback -->
             <div class="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 rounded-xl px-2 py-1.5 focus-within:border-emerald-500">
-                <input id="assistant-text-input" type="text" placeholder="Ask details or type command..." class="bg-transparent text-xs w-full focus:outline-none text-slate-100 px-1" onkeypress="handleTextInputKeyPress(event)">
+                <input id="assistant-text-input" type="text" placeholder="Type crop lot bookings or queries..." class="bg-transparent text-xs w-full focus:outline-none text-slate-100 px-1" onkeypress="handleTextInputKeyPress(event)">
                 <button onclick="sendTextQuery()" class="text-emerald-500 hover:text-emerald-400 p-1 flex items-center justify-center">
                     <i class="fa-solid fa-paper-plane"></i>
                 </button>
             </div>
             
-            <!-- Quick Command suggestions for Developer Review -->
+            <!-- Quick Prompts list -->
             <div class="mt-3 pt-3 border-t border-slate-900/60">
-                <p class="text-[9px] text-slate-400 font-semibold uppercase mb-1.5">Quick Scoped Prompts:</p>
+                <p class="text-[9px] text-slate-400 font-semibold uppercase mb-1.5">Quick Voice/Text Prompts:</p>
                 <div class="flex flex-wrap gap-1">
-                    <button onclick="mockCommandText('what is the price of onion?')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Onion Prices</button>
-                    <button onclick="mockCommandText('what is the weather condition?')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Weather Advisory</button>
-                    <button onclick="mockCommandText('use 10 bags of urea')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Deduct Urea</button>
-                    <button onclick="mockCommandText('send 50 bags of onion to Mumbai APMC')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Book Transport</button>
+                    <button onclick="mockCommandText('calculate payout for 25 quintals of onion standard grade')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Estimate Payout</button>
+                    <button onclick="mockCommandText('book mandi order of 15 quintals tomatoes to Mumbai APMC (Vashi)')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Book Lot Order</button>
+                    <button onclick="mockCommandText('track shipment')" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded-lg">Track Current Location</button>
                 </div>
             </div>
         </div>
 
         <!-- Float Launcher Mic Button -->
         <div class="relative">
-            <!-- Active recording pulsing ring shadow -->
             <div id="mic-pulse-ring" class="hidden absolute -inset-1.5 rounded-full bg-emerald-500/30 mic-active-ring z-0"></div>
             
             <button id="mic-btn" onclick="handleMicButtonClick()" class="relative z-10 h-14 w-14 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 text-slate-950 flex items-center justify-center shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all duration-200">
@@ -441,13 +462,13 @@
         let mandiChart = null;
         let globalDashboardData = null;
         let activeFarmer = null;
+        let trackingOrderId = null;
 
-        // Determine API Base URL dynamically
+        // API base resolver
         const API_BASE = (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://127.0.0.1:8000'
             : '';
 
-        // UI Target mapping colors
         const SECTION_DOMS = {
             Mandi: 'mandi-section',
             Weather: 'weather-section',
@@ -460,7 +481,7 @@
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
 
-        // Initialize Onboarding or Dashboard checks
+        // Initialize check
         window.addEventListener('DOMContentLoaded', () => {
             checkAuthSession();
         });
@@ -490,18 +511,12 @@
             document.getElementById('auth-step-login').classList.remove('hidden');
             document.getElementById('auth-step-register').classList.add('hidden');
             document.getElementById('auth-error-banner').classList.add('hidden');
-            
-            document.getElementById('tab-login').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-400 transition-all duration-200";
-            document.getElementById('tab-register').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all duration-200";
         }
 
         function showRegisterStep() {
             document.getElementById('auth-step-login').classList.add('hidden');
             document.getElementById('auth-step-register').classList.remove('hidden');
             document.getElementById('auth-error-banner').classList.add('hidden');
-            
-            document.getElementById('tab-login').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all duration-200";
-            document.getElementById('tab-register').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-400 transition-all duration-200";
         }
 
         function showAuthError(message) {
@@ -511,10 +526,10 @@
             banner.classList.remove('hidden');
         }
 
-        async function handleAuthLogin() {
-            const email = document.getElementById('auth-email').value.trim();
-            if (!email || !email.includes('@')) {
-                showAuthError("Please enter a valid Email ID.");
+        async function handlePhoneLoginCheck() {
+            const phone = document.getElementById('auth-phone').value.trim();
+            if (!phone || phone.length < 10) {
+                showAuthError("Please enter a valid 10-digit phone number.");
                 return;
             }
 
@@ -522,20 +537,17 @@
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
+                    body: JSON.stringify({ phone_number: phone })
                 });
-                
-                if (!response.ok) {
-                    const errRes = await response.json();
-                    showAuthError(errRes.detail || "Email ID not found. Please click Register to onboarding your farm.");
-                    return;
-                }
-                
                 const res = await response.json();
+                
                 if (res.status === 'success') {
                     saveSessionAndBoot(res.profile);
+                } else if (res.status === 'registration_required') {
+                    showRegisterStep();
+                    document.getElementById('reg-name').focus();
                 } else {
-                    showAuthError("Authentication check failed.");
+                    showAuthError(res.detail || "Authentication check failed.");
                 }
             } catch (err) {
                 console.error(err);
@@ -543,15 +555,15 @@
             }
         }
 
-        async function handleAuthRegister() {
-            const email = document.getElementById('reg-email').value.trim();
+        async function handlePhoneRegister() {
+            const phone = document.getElementById('auth-phone').value.trim();
             const name = document.getElementById('reg-name').value.trim();
             const state = document.getElementById('reg-state').value;
             const lang = document.getElementById('reg-lang').value;
             const land = parseFloat(document.getElementById('reg-land').value);
 
-            if (!email || !email.includes('@') || !name || isNaN(land) || land <= 0) {
-                showAuthError("Please complete all onboarding fields with a valid Email ID and land size.");
+            if (!name || isNaN(land) || land <= 0) {
+                showAuthError("Please complete all onboarding fields.");
                 return;
             }
 
@@ -560,25 +572,19 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        email: email,
+                        phone_number: phone,
                         full_name: name,
                         state: state,
                         preferred_language: lang,
                         land_size_acres: land
                     })
                 });
-                
-                if (!response.ok) {
-                    const errRes = await response.json();
-                    showAuthError(errRes.detail || "Registration failed.");
-                    return;
-                }
-                
                 const res = await response.json();
+
                 if (res.status === 'success') {
                     saveSessionAndBoot(res.profile);
                 } else {
-                    showAuthError("Registration failed.");
+                    showAuthError(res.detail || "Registration failed.");
                 }
             } catch (err) {
                 console.error(err);
@@ -599,28 +605,26 @@
             location.reload();
         }
 
-        // --- DASHBOARD ACTIONS ---
+        // --- DASHBOARD CORE ACTIONS ---
 
         function showDashboard() {
-            // Render Profile headers
             document.getElementById('header-profile').classList.remove('hidden');
             document.getElementById('profile-name-span').innerText = activeFarmer.full_name;
             document.getElementById('profile-details-span').innerText = `${activeFarmer.state} | ${activeFarmer.land_size_acres} Acres`;
             
-            // Personalize assistant welcome bubble
+            // Welcome summary translation
             const welcomeText = document.getElementById('assistant-welcome-text');
             if (activeFarmer.preferred_language === 'Hindi') {
-                welcomeText.innerText = `Namaskar ${activeFarmer.full_name} bhaiya! KrishiSync assistant me aapka swagat hai. Main aapki Mandi rates, seed stock ya logistics booking me madad kar sakta hoon.`;
+                welcomeText.innerText = `Namaskar ${activeFarmer.full_name} ji! Mandi orders booking, price calculation estimates, ya logistics coordinate tracking ke liye voice ya text command bole.`;
             } else if (activeFarmer.preferred_language === 'Marathi') {
-                welcomeText.innerText = `Namaskar ${activeFarmer.full_name} bhau! KrishiSync assistant madhye aaple swagat aahe. Me tumhala market rates, inventory levels kinva transport ticket book karun deu shakto.`;
+                welcomeText.innerText = `Namaskar ${activeFarmer.full_name} bhau! Mandi lot bookings, price estimations, kinva logistics order details check karnyasathi voice kinva text command dya.`;
             } else {
-                welcomeText.innerText = `Welcome ${activeFarmer.full_name}! I am your KrishiSync ERP assistant. Ask me to query mandi rates, update your seeds/fertilizer inventory, or log logistics dispatch tickets.`;
+                welcomeText.innerText = `Welcome ${activeFarmer.full_name}! Ask me to estimate crop pricing values, book mandi lots, or track active logistics shipments.`;
             }
 
             loadDashboardData();
         }
 
-        // Secure Scoped Fetch wrapper incorporating X-Farmer-ID
         async function secureFetch(url, options = {}) {
             if (!activeFarmer) {
                 showAuthOverlay();
@@ -640,11 +644,11 @@
                     globalDashboardData = data;
                     renderWeather(data.weather);
                     renderInventory(data.inventory);
-                    renderLogistics(data.logistics);
+                    renderOrders(data.mandi_orders);
                     
                     updateMandiChartForSelectedCrop();
                 } else {
-                    handleLogout(); // Session invalid
+                    handleLogout();
                 }
             } catch (err) {
                 console.error("Dashboard fetching failure: ", err);
@@ -652,21 +656,15 @@
         }
 
         function renderWeather(weather) {
-            document.getElementById('weather-temp').innerText = weather.temperature;
+            document.getElementById('weather-temp').innerText = weather.temp;
             document.getElementById('weather-humidity').innerText = weather.humidity;
-            document.getElementById('weather-forecast').innerText = weather.forecast;
-            document.getElementById('weather-advisory').innerText = weather.pest_prevention_advisory;
+            document.getElementById('weather-advisory').innerText = weather.advisory;
         }
 
         function renderInventory(inventory) {
             const container = document.getElementById('inventory-list');
             container.innerHTML = '';
             
-            if (inventory.length === 0) {
-                container.innerHTML = `<div class="text-xs text-slate-500 text-center py-6">No inventory items. Use the adjust form to add.</div>`;
-                return;
-            }
-
             inventory.forEach(item => {
                 const percent = Math.min(100, Math.max(0, (item.quantity / 100) * 100));
                 
@@ -674,15 +672,13 @@
                 if (percent < 20) colorClass = "bg-rose-500 animate-pulse";
                 else if (percent < 50) colorClass = "bg-amber-400";
 
-                const dateStr = item.last_updated ? new Date(item.last_updated).toLocaleTimeString('en-IN', {hour: '2-digit', minute:'2-digit'}) : 'N/A';
-
                 container.innerHTML += `
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-semibold">
                             <span class="text-slate-300">${item.item_name}</span>
-                            <span class="text-slate-200">${item.quantity} ${item.unit} <span class="text-[9px] text-slate-500 font-normal">(${dateStr})</span></span>
+                            <span class="text-slate-200">${item.quantity} ${item.unit}</span>
                         </div>
-                        <div class="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
                             <div class="h-full ${colorClass} rounded-full" style="width: ${percent}%"></div>
                         </div>
                     </div>
@@ -690,45 +686,156 @@
             });
         }
 
-        function renderLogistics(logistics) {
-            const tbody = document.getElementById('logistics-table-body');
+        function renderOrders(orders) {
+            const tbody = document.getElementById('orders-table-body');
             tbody.innerHTML = '';
             
-            if (logistics.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 text-[10px]">No logistics tickets logged.</td></tr>`;
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-4 text-center text-slate-500 text-[10px]">No logistics tickets logged.</td></tr>`;
+                document.getElementById('live-tracking-widget').classList.add('hidden');
                 return;
             }
 
-            logistics.forEach(log => {
+            // Set the first active transit order to track
+            const activeTransit = orders.find(o => o.status === "In Transit");
+            if (activeTransit) {
+                trackingOrderId = activeTransit.id;
+                document.getElementById('live-tracking-widget').classList.remove('hidden');
+                document.getElementById('track-crop-label').innerText = `Lot #${activeTransit.id}: ${activeTransit.crop_name} (${activeTransit.quantity_quintals}q)`;
+                document.getElementById('track-gps-label').innerText = `GPS: ${activeTransit.lat.toFixed(4)}, ${activeTransit.lng.toFixed(4)}`;
+                document.getElementById('track-dest-label').innerText = `Dest: ${activeTransit.target_mandi}`;
+                
+                // Estimate progress bar based on Nashik starting coordinate diff
+                const destCoords = MANDI_COORDINATES[activeTransit.target_mandi] || (19.03, 73.02);
+                const d_total = ((destCoords[0] - 19.99)**2 + (destCoords[1] - 73.78)**2)**0.5;
+                const d_current = ((destCoords[0] - activeTransit.lat)**2 + (destCoords[1] - activeTransit.lng)**2)**0.5;
+                const progress = Math.max(0, Math.min(95, (1 - d_current / d_total) * 100));
+                
+                document.getElementById('track-progress-bar').style.width = `${progress}%`;
+            } else {
+                // If the latest order is Delivered
+                const latest = orders[0];
+                trackingOrderId = latest.id;
+                document.getElementById('live-tracking-widget').classList.remove('hidden');
+                document.getElementById('track-crop-label').innerText = `Lot #${latest.id}: ${latest.crop_name} (${latest.quantity_quintals}q)`;
+                document.getElementById('track-gps-label').innerText = `GPS: ${latest.lat.toFixed(4)}, ${latest.lng.toFixed(4)}`;
+                document.getElementById('track-dest-label').innerText = `Dest: ${latest.target_mandi}`;
+                document.getElementById('track-progress-bar').style.width = `100%`;
+                document.getElementById('track-progress-bar').className = "h-full bg-emerald-500 rounded-full";
+            }
+
+            orders.forEach(order => {
                 let statusBadge = "text-amber-400 bg-amber-400/10 border-amber-400/20";
-                if (log.status === "Delivered") {
+                let actionBtn = `<button onclick="setTrackingActive(${order.id})" class="text-[10px] text-emerald-400 hover:underline mr-2"><i class="fa-solid fa-map-location-dot"></i> Track</button>`;
+                
+                if (order.status === "Delivered") {
                     statusBadge = "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
-                } else if (log.status === "In Transit") {
-                    statusBadge = "text-blue-400 bg-blue-400/10 border-blue-400/20";
                 }
                 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900/30 transition-colors duration-150 border-b border-slate-900/40">
-                        <td class="py-3 font-semibold text-slate-200">${log.commodity}</td>
-                        <td class="py-3 text-slate-400">${log.weight}</td>
-                        <td class="py-3 text-slate-400">${log.destination}</td>
-                        <td class="py-3 font-mono text-[10px] text-slate-400">${log.tracking_id}</td>
+                        <td class="py-3 font-semibold text-slate-200">#${order.id}</td>
+                        <td class="py-3 text-slate-300 font-medium">${order.crop_name}</td>
+                        <td class="py-3 text-slate-400">${order.quantity_quintals} q</td>
+                        <td class="py-3 text-slate-400">${order.target_mandi.split(' ')[0]}</td>
+                        <td class="py-3 text-emerald-400 font-semibold">₹${order.estimated_payout.toLocaleString()}</td>
                         <td class="py-3 text-right">
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge}">${log.status}</span>
+                            ${actionBtn}
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full border ${statusBadge}">${order.status}</span>
                         </td>
                     </tr>
                 `;
             });
         }
 
+        function setTrackingActive(orderId) {
+            const matched = globalDashboardData.mandi_orders.find(o => o.id === orderId);
+            if (matched) {
+                trackingOrderId = orderId;
+                document.getElementById('live-tracking-widget').classList.remove('hidden');
+                document.getElementById('track-crop-label').innerText = `Lot #${matched.id}: ${matched.crop_name} (${matched.quantity_quintals}q)`;
+                document.getElementById('track-gps-label').innerText = `GPS: ${matched.lat.toFixed(4)}, ${matched.lng.toFixed(4)}`;
+                document.getElementById('track-dest-label').innerText = `Dest: ${matched.target_mandi}`;
+                
+                const destCoords = MANDI_COORDINATES[matched.target_mandi] || (19.03, 73.02);
+                const d_total = ((destCoords[0] - 19.99)**2 + (destCoords[1] - 73.78)**2)**0.5;
+                const d_current = ((destCoords[0] - matched.lat)**2 + (destCoords[1] - matched.lng)**2)**0.5;
+                const progress = matched.status === "Delivered" ? 100 : Math.max(0, Math.min(95, (1 - d_current / d_total) * 100));
+                
+                document.getElementById('track-progress-bar').style.width = `${progress}%`;
+                
+                // Scroll focus
+                document.getElementById('logistics-section').scrollIntoView({ behavior: 'smooth' });
+                highlightTargetCard('Mandi');
+            }
+        }
+
+        async function triggerGeoTrackerUpdate() {
+            if (!trackingOrderId) return;
+            document.getElementById('assistant-status').innerText = "Updating shipment telemetry...";
+            
+            // Command prompt executes tracking tool which moves coordinate closer
+            const command = `track shipment ${trackingOrderId}`;
+            postTextQueryToAgent(command);
+        }
+
+        // ESTIMATOR CALCULATORS
+
+        async function calculateManualEstimate() {
+            const crop = document.getElementById('est-crop').value;
+            const qty = parseFloat(document.getElementById('est-qty').value);
+            const grade = document.getElementById('est-grade').value;
+
+            if (isNaN(qty) || qty <= 0) return;
+
+            const command = `calculate payout for ${qty} quintals of ${crop} ${grade} quality`;
+            
+            try {
+                const response = await secureFetch(`${API_BASE}/api/query`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: command })
+                });
+                const res = await response.json();
+                
+                if (res.target_ui_tab === 'Mandi') {
+                    const data = res.data_payload;
+                    document.getElementById('estimator-output').innerHTML = `
+                        Rate: <strong class="text-amber-400">₹${data.rate_per_quintal.toLocaleString()}/q</strong> | 
+                        Total Payout: <strong class="text-emerald-400">₹${data.estimated_payout.toLocaleString()}</strong>
+                    `;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function bookManualOrder() {
+            const crop = document.getElementById('est-crop').value;
+            const qty = parseFloat(document.getElementById('est-qty').value);
+            const grade = document.getElementById('est-grade').value;
+
+            // Pick a matching mandi based on state
+            let mandi = "Mumbai APMC (Vashi)";
+            if (activeFarmer.state === 'Rajasthan') mandi = "Kota APMC (Rajasthan)";
+            else if (activeFarmer.state === 'Karnataka') mandi = "Kolar APMC (Karnataka)";
+            else if (activeFarmer.state === 'Uttar Pradesh') mandi = "Agra APMC (UP)";
+            else if (activeFarmer.state === 'West Bengal') mandi = "Kolkata APMC";
+
+            const command = `book mandi order of ${qty} quintals ${crop} to ${mandi}`;
+            postTextQueryToAgent(command);
+        }
+
+        // Chart setup
         function updateMandiChartForSelectedCrop() {
             if (!globalDashboardData) return;
             
-            const cropSelector = document.getElementById('mandi-crop-select');
+            const cropSelector = document.getElementById('est-crop');
             const selectedCrop = cropSelector.value;
             
             const matchedPrices = globalDashboardData.market_prices.filter(p => 
-                p.crop_name.toLowerCase() === selectedCrop.toLowerCase()
+                p.mandi_name.toLowerCase().includes(selectedCrop.toLowerCase()) || 
+                p.id < 4 // default fallback indices
             );
 
             const ratesContainer = document.getElementById('mandi-rates-list');
@@ -737,19 +844,20 @@
             const chartLabels = [];
             const chartData = [];
 
-            matchedPrices.forEach(p => {
-                chartLabels.push(p.market_name.split(' ')[0]);
-                chartData.push(p.price_per_quintal);
+            // Slice top 3
+            matchedPrices.slice(0, 3).forEach(p => {
+                chartLabels.push(p.mandi_name.split(' ')[0]);
+                chartData.push(p.base_price);
 
                 ratesContainer.innerHTML += `
                     <div class="bg-slate-900/50 hover:bg-slate-900 border border-slate-800/80 px-3 py-2 rounded-xl flex items-center justify-between transition-colors duration-200">
                         <div>
-                            <p class="text-xs font-semibold text-slate-200">${p.market_name}</p>
+                            <p class="text-xs font-semibold text-slate-200">${p.mandi_name}</p>
                             <p class="text-[9px] text-emerald-400 font-semibold tracking-wide uppercase">APMC mandi</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-xs font-bold text-amber-300">₹${p.price_per_quintal.toLocaleString()}</p>
-                            <p class="text-[9px] text-slate-400">per Quintal</p>
+                            <p class="text-xs font-bold text-amber-300">₹${p.base_price.toLocaleString()}</p>
+                            <p class="text-[9px] text-slate-400">Base Price</p>
                         </div>
                     </div>
                 `;
@@ -765,13 +873,12 @@
                 data: {
                     labels: chartLabels,
                     datasets: [{
-                        label: `${selectedCrop} (₹/Quintal)`,
+                        label: `${selectedCrop} Rates`,
                         data: chartData,
                         backgroundColor: 'rgba(16, 185, 129, 0.25)',
                         borderColor: '#10b981',
                         borderWidth: 2,
                         borderRadius: 8,
-                        hoverBackgroundColor: 'rgba(16, 185, 129, 0.55)',
                     }]
                 },
                 options: {
@@ -794,23 +901,7 @@
             });
         }
 
-        async function handleQuickInventoryAdjust() {
-            const item = document.getElementById('quick-item-name').value.trim();
-            const qty = parseFloat(document.getElementById('quick-item-qty').value);
-            
-            if (!item || isNaN(qty)) {
-                alert("Please enter a valid item name and quantity.");
-                return;
-            }
-
-            const command = `update inventory ${item} by ${qty}`;
-            postTextQueryToAgent(command);
-            
-            document.getElementById('quick-item-name').value = '';
-            document.getElementById('quick-item-qty').value = '';
-        }
-
-        // --- ASSISTANT CONTEXT ROUTING ---
+        // --- ASSISTANT ROUTING CORE ---
 
         function handleTextInputKeyPress(event) {
             if (event.key === 'Enter') {
@@ -846,15 +937,15 @@
                 const result = await response.json();
                 handleAgentResponse(result);
             } catch (err) {
-                console.error("Text command failed: ", err);
-                appendDialogueBubble('assistant', "Connection error. Please check backend server status.");
-                document.getElementById('assistant-status').innerText = "Error encountered.";
+                console.error(err);
+                appendDialogueBubble('assistant', "Connection failure to agricultural backend service.");
+                document.getElementById('assistant-status').innerText = "Error.";
             }
         }
 
         function appendDialogueBubble(sender, text) {
             const box = document.getElementById('dialogue-box');
-            const name = sender === 'user' ? 'You' : 'KrishiSync Assistant';
+            const name = sender === 'user' ? 'You' : 'KrishiSync Agent';
             const nameColor = sender === 'user' ? 'text-amber-400' : 'text-emerald-400';
             const bgClass = sender === 'user' ? 'bg-slate-900/40 border border-slate-900 ml-8' : 'bg-slate-900/80 border border-slate-800 mr-8';
 
@@ -870,24 +961,10 @@
         function handleAgentResponse(payload) {
             const tab = payload.target_ui_tab;
             
-            appendDialogueBubble('assistant', payload.localized_text_summary);
-            document.getElementById('assistant-status').innerText = "Action complete.";
+            appendDialogueBubble('assistant', payload.localization_summary);
+            document.getElementById('assistant-status').innerText = "ERP State Updated.";
 
             highlightTargetCard(tab);
-
-            if (tab === 'Mandi') {
-                const cropName = payload.data.crop;
-                if (cropName) {
-                    const selector = document.getElementById('mandi-crop-select');
-                    for (let i=0; i < selector.options.length; i++) {
-                        if (selector.options[i].value.toLowerCase() === cropName.toLowerCase()) {
-                            selector.selectedIndex = i;
-                            break;
-                        }
-                    }
-                }
-            }
-            
             loadDashboardData();
         }
 
@@ -914,7 +991,7 @@
             }
         }
 
-        // --- WEB AUDIO API & MICROPHONE HANDLERS ---
+        // --- SPEECH LAYER: MICROPHONE & WEB AUDIO API ---
 
         let mediaRecorder = null;
         let audioChunks = [];
@@ -940,7 +1017,6 @@
 
         async function startVoiceRecording() {
             audioChunks = [];
-            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 streamRef = stream;
@@ -948,7 +1024,7 @@
                 document.getElementById('mic-pulse-ring').classList.remove('hidden');
                 document.getElementById('visualizer-container').classList.remove('hidden');
                 document.getElementById('visualizer-container').classList.add('flex');
-                document.getElementById('assistant-status').innerText = "Listening to farmer voice...";
+                document.getElementById('assistant-status').innerText = "Recording regional Indic voice...";
                 document.getElementById('mic-icon').className = 'fa-solid fa-circle-stop text-slate-950 text-xl animate-pulse';
 
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -961,28 +1037,22 @@
 
                 mediaRecorder = new MediaRecorder(stream);
                 mediaRecorder.ondataavailable = e => {
-                    if (e.data.size > 0) {
-                        audioChunks.push(e.data);
-                    }
+                    if (e.data.size > 0) audioChunks.push(e.data);
                 };
                 mediaRecorder.onstop = uploadVoiceData;
                 mediaRecorder.start();
 
             } catch (err) {
                 console.error(err);
-                appendDialogueBubble('assistant', "Microphone access blocked. Please type command in the text box.");
-                document.getElementById('assistant-status').innerText = "Mic access error.";
+                appendDialogueBubble('assistant', "Microphone access blocked. Please type queries.");
+                document.getElementById('assistant-status').innerText = "Mic error.";
                 stopAudioVisuals();
             }
         }
 
         function stopVoiceRecording() {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            if (streamRef) {
-                streamRef.getTracks().forEach(track => track.stop());
-            }
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (streamRef) streamRef.getTracks().forEach(track => track.stop());
             stopAudioVisuals();
         }
 
@@ -992,12 +1062,8 @@
             document.getElementById('visualizer-container').classList.remove('flex');
             document.getElementById('mic-icon').className = 'fa-solid fa-microphone-lines text-xl';
             
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
-            if (audioCtx) {
-                audioCtx.close();
-            }
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (audioCtx) audioCtx.close();
         }
 
         function drawWaveform() {
@@ -1028,7 +1094,7 @@
         }
 
         async function uploadVoiceData() {
-            document.getElementById('assistant-status').innerText = "Transcribing voice via Sarvam AI...";
+            document.getElementById('assistant-status').innerText = "Sarvam AI translating Indic audio...";
             
             const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
             const formData = new FormData();
@@ -1039,13 +1105,12 @@
                     method: 'POST',
                     body: formData
                 });
-                
                 const result = await response.json();
                 handleAgentResponse(result);
             } catch (err) {
                 console.error(err);
-                appendDialogueBubble('assistant', "Voice query processing failed.");
-                document.getElementById('assistant-status').innerText = "Voice API Error.";
+                appendDialogueBubble('assistant', "Voice translation failure.");
+                document.getElementById('assistant-status').innerText = "STT Error.";
             }
         }
     </script>

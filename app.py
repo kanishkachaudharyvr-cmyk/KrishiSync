@@ -13,24 +13,107 @@ from pydantic import BaseModel, Field
 import uvicorn
 from dotenv import load_dotenv
 import httpx
-from sqlalchemy.orm import Session
 
-# Import database models & session
-from database import init_db, SessionLocal, Farmer, InventoryItem, MandiPrice, LogisticsTicket
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("KrishiSyncApp")
+logger = logging.getLogger("KrishiSyncHackathon")
 
 load_dotenv()
 
+# --- Database Models & Setup ---
+
+Base = declarative_base()
+
+class Farmer(Base):
+    __tablename__ = "farmers"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    phone_number = Column(String, unique=True, index=True, nullable=False)
+    full_name = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    preferred_language = Column(String, default="en")
+    land_size_acres = Column(Float, default=0.0)
+
+    inventory_items = relationship("InventoryItem", back_populates="farmer", cascade="all, delete-orphan")
+    mandi_orders = relationship("MandiOrder", back_populates="farmer", cascade="all, delete-orphan")
+
+class InventoryItem(Base):
+    __tablename__ = "inventory_items"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    item_name = Column(String, nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String, nullable=False)
+
+    farmer = relationship("Farmer", back_populates="inventory_items")
+
+class MandiOrder(Base):
+    __tablename__ = "mandi_orders"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    crop_name = Column(String, nullable=False)
+    quantity_quintals = Column(Float, nullable=False)
+    target_mandi = Column(String, nullable=False)
+    estimated_payout = Column(Float, nullable=False)
+    status = Column(String, default="In Transit")  # "In Transit" | "Delivered"
+    transit_lat = Column(Float, default=19.99)    # Starting point (Nashik)
+    transit_lng = Column(Float, default=73.78)
+
+    farmer = relationship("Farmer", back_populates="mandi_orders")
+
+class MandiReference(Base):
+    __tablename__ = "mandi_references"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    mandi_name = Column(String, unique=True, nullable=False)
+    city = Column(String, nullable=False)
+    state = Column(String, nullable=False)
+    base_price = Column(Float, nullable=False)  # Base price per quintal
+
+# Dynamic DB Path for Vercel
+is_vercel = "VERCEL" in os.environ or os.name != "nt"
+db_path = "/tmp/krishisync_hackathon.db" if is_vercel else "krishisync_hackathon.db"
+DATABASE_URL = f"sqlite:///{db_path}"
+
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def init_db():
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        if db.query(MandiReference).count() == 0:
+            db.add_all([
+                MandiReference(mandi_name="Mumbai APMC (Vashi)", city="Mumbai", state="Maharashtra", base_price=2400.0),
+                MandiReference(mandi_name="Lasalgaon APMC (Nashik)", city="Lasalgaon", state="Maharashtra", base_price=2200.0),
+                MandiReference(mandi_name="Pune APMC", city="Pune", state="Maharashtra", base_price=2300.0),
+                MandiReference(mandi_name="Azadpur APMC (Delhi)", city="Delhi", state="Delhi", base_price=2100.0),
+                MandiReference(mandi_name="Kolar APMC (Karnataka)", city="Kolar", state="Karnataka", base_price=1800.0),
+                MandiReference(mandi_name="Kota APMC (Rajasthan)", city="Kota", state="Rajasthan", base_price=2600.0),
+                MandiReference(mandi_name="Agra APMC (UP)", city="Agra", state="Uttar Pradesh", base_price=1400.0),
+                MandiReference(mandi_name="Kolkata APMC", city="Kolkata", state="West Bengal", base_price=1600.0)
+            ])
+            db.commit()
+            logger.info("Mandi pricing reference data seeded.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error seeding mandi reference: {e}")
+    finally:
+        db.close()
+
+# --- Initialize FastAPI ---
+
 app = FastAPI(
-    title="KrishiSync Core API",
-    description="Multi-user, context-aware agricultural assistant backend.",
-    version="2.0.0"
+    title="KrishiSync Hackathon Engine",
+    description="Context-aware multi-lingual farming ERP API.",
+    version="3.0.0"
 )
 
-# CORS config
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,191 +125,200 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     init_db()
-    logger.info("Database schemas initialized and seeded.")
 
-# --- Pydantic Data Models ---
+# --- Pydantic Schemas ---
 
 class LoginPayload(BaseModel):
-    email: str = Field(..., description="Farmer email ID to look up.")
+    phone_number: str = Field(..., description="10-digit phone number.")
 
 class RegisterPayload(BaseModel):
-    email: str
+    phone_number: str
     full_name: str
     state: str
     preferred_language: str
     land_size_acres: float
 
 class KrishiSyncPayload(BaseModel):
-    target_ui_tab: str = Field(..., description="The target tab to display: 'Mandi', 'Weather', 'Inventory', or 'Voice Assistant'")
-    data: Dict[str, Any] = Field(..., description="JSON results returned by the executed agricultural database tools.")
-    localized_text_summary: str = Field(..., description="Summary of action completed, translated according to the farmer's preferred language.")
+    target_ui_tab: str = Field(..., description="Tab to activate: 'Mandi', 'Weather', 'Inventory', or 'Voice Assistant'")
+    data_payload: Dict[str, Any] = Field(..., description="JSON data from database tool execution.")
+    localization_summary: str = Field(..., description="Indic-language summary tailored to the farmer's language.")
 
-# --- Helper Dependency for Session Identity ---
+# --- Authentication Dependency ---
 
-async def get_active_farmer_id(x_farmer_id: Optional[str] = Header(None)) -> int:
-    """
-    Extracts farmer session ID from headers. Ensures secure, private data scoping.
-    """
+async def get_farmer_id_header(x_farmer_id: Optional[str] = Header(None)) -> int:
     if not x_farmer_id:
-        raise HTTPException(status_code=401, detail="Authentication required: X-Farmer-ID header missing.")
+        raise HTTPException(status_code=401, detail="X-Farmer-ID header missing. Please authenticate.")
     try:
         return int(x_farmer_id)
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid X-Farmer-ID format.")
+        raise HTTPException(status_code=400, detail="Invalid X-Farmer-ID header.")
 
-# --- Context-Aware Agent Execution Loop ---
+# --- Scoped Tools & Orchestration Loop ---
 
 try:
     from google.antigravity import Agent, LocalAgentConfig
     HAS_ANTIGRAVITY = True
-    logger.info("google-antigravity SDK imported successfully.")
+    logger.info("Successfully imported google.antigravity SDK.")
 except ImportError:
     HAS_ANTIGRAVITY = False
-    logger.warning("google-antigravity SDK not found. Setting up high-fidelity context emulation.")
+    logger.warning("google.antigravity SDK missing. Using emulation mode.")
 
-async def execute_context_agent_loop(query_text: str, farmer_id: int) -> KrishiSyncPayload:
-    """
-    Cognitive execution loop. Binds tools to the current farmer's DB session context,
-    injects profile settings into system instructions, and returns structural output.
-    """
+# Static APMC coordinates
+MANDI_COORDINATES = {
+    "Mumbai APMC (Vashi)": (19.03, 73.02),
+    "Lasalgaon APMC (Nashik)": (20.14, 74.22),
+    "Pune APMC": (18.52, 73.85),
+    "Azadpur APMC (Delhi)": (28.71, 77.17),
+    "Kolar APMC (Karnataka)": (13.13, 78.13),
+    "Kota APMC (Rajasthan)": (25.21, 75.86),
+    "Agra APMC (UP)": (27.18, 78.00),
+    "Kolkata APMC": (22.57, 88.36)
+}
+
+async def run_contextual_agent(query: str, farmer_id: int) -> KrishiSyncPayload:
     db = SessionLocal()
     try:
         farmer = db.query(Farmer).filter(Farmer.id == farmer_id).first()
         if not farmer:
             raise HTTPException(status_code=404, detail="Farmer profile not found.")
 
-        # --- Request-Scoped Database-bound Tools (Closures for absolute privacy) ---
+        # --- Scoped Closures for Agent Tools (Enforces strict data scoping) ---
 
-        def query_mandi_prices(crop_name: str) -> dict:
+        def calculate_price_estimate(crop_name: str, quantity_quintals: float, quality_grade: str) -> dict:
             """
-            Queries reference market rates for a specific crop across mandis.
+            Calculates estimated payouts for a crop lot based on quality grade: Premium (1.2x), Standard (1.0x), Fair (0.8x).
             """
-            logger.info(f"[Tool: query_mandi_prices] Searching crop: {crop_name}")
-            results = db.query(MandiPrice).filter(MandiPrice.crop_name.ilike(f"%{crop_name}%")).all()
-            if not results:
-                return {
-                    "status": "not_found",
-                    "message": f"No market rate information found for '{crop_name}'."
-                }
+            logger.info(f"[Tool: calculate_price_estimate] Crop: {crop_name}, Qty: {quantity_quintals}, Quality: {quality_grade}")
             
-            markets_list = [{"market": r.market_name, "price_per_quintal": r.price_per_quintal, "date": r.date} for r in results]
-            best_deal = max(results, key=lambda x: x.price_per_quintal)
+            # Lookup reference mandi base price or match by crop name
+            ref = db.query(MandiReference).filter(MandiReference.mandi_name.ilike(f"%{farmer.state}%")).first()
+            if not ref:
+                ref = db.query(MandiReference).first()
+            
+            base_price = ref.base_price if ref else 2000.0
+            
+            # Adjust general base rate depending on crop type
+            crop_lower = crop_name.lower()
+            if "onion" in crop_lower:
+                base_price = 2400.0
+            elif "tomato" in crop_lower:
+                base_price = 1800.0
+            elif "wheat" in crop_lower:
+                base_price = 2600.0
+            elif "cotton" in crop_lower:
+                base_price = 7200.0
+            elif "potato" in crop_lower:
+                base_price = 1400.0
+
+            multipliers = {"Premium": 1.2, "Standard": 1.0, "Fair": 0.8}
+            mult = multipliers.get(quality_grade.title(), 1.0)
+            
+            rate = base_price * mult
+            payout = rate * quantity_quintals
+            
             return {
                 "status": "success",
                 "crop": crop_name.capitalize(),
-                "markets": markets_list,
-                "best_market": best_deal.market_name,
-                "best_price": best_deal.price_per_quintal
+                "quantity_quintals": quantity_quintals,
+                "quality_grade": quality_grade.title(),
+                "rate_per_quintal": rate,
+                "estimated_payout": payout
             }
 
-        def update_inventory(item_name: str, quantity_change: float, unit: str = "bags") -> dict:
+        def book_mandi_order(crop_name: str, quantity_quintals: float, target_mandi: str, quality_grade: str) -> dict:
             """
-            Updates input stock quantities for this specific farmer.
-            Positive change adds stock; negative subtracts.
+            Books a crop lot transport dispatch to a municipal APMC Mandi, starting the telemetry queue.
             """
-            logger.info(f"[Tool: update_inventory] Scoped to farmer {farmer_id}: {item_name} by {quantity_change}")
-            item = db.query(InventoryItem).filter(
-                InventoryItem.farmer_id == farmer_id,
-                InventoryItem.item_name.ilike(f"%{item_name}%")
-            ).first()
-
-            if not item:
-                if quantity_change < 0:
-                    return {
-                        "status": "error",
-                        "message": f"Item '{item_name}' not found in your inventory. Cannot subtract."
-                    }
-                item = InventoryItem(
-                    farmer_id=farmer_id,
-                    item_name=item_name.title(),
-                    quantity=quantity_change,
-                    unit=unit,
-                    status="In Stock"
-                )
-                db.add(item)
-                db.commit()
-                db.refresh(item)
-                action = "created"
-            else:
-                item.quantity += quantity_change
-                if item.quantity < 0:
-                    item.quantity = 0.0
-                
-                # Update visual status
-                if item.quantity == 0:
-                    item.status = "Out of Stock"
-                elif item.quantity < 10:
-                    item.status = "Low"
-                else:
-                    item.status = "In Stock"
-                    
-                db.commit()
-                db.refresh(item)
-                action = "updated"
-
-            return {
-                "status": "success",
-                "item_name": item.item_name,
-                "quantity": item.quantity,
-                "unit": item.unit,
-                "status_label": item.status,
-                "action": action,
-                "last_updated": item.last_updated.isoformat() if item.last_updated else None
-            }
-
-        def log_transportation(commodity: str, weight: str, target_destination: str) -> dict:
-            """
-            Books a transit logistics ticket for this farmer.
-            """
-            logger.info(f"[Tool: log_transportation] Booking transit for farmer {farmer_id}: {weight} of {commodity}")
-            tracking_id = f"KS-TRK-{uuid.uuid4().hex[:6].upper()}"
+            logger.info(f"[Tool: book_mandi_order] Scoped to farmer {farmer_id}: {quantity_quintals}q {crop_name} to {target_mandi}")
             
-            # Simulate logistics matching
-            drivers = [
-                {"name": "Baldev Singh", "phone": "+91-99880-55443", "vehicle": "Eicher Pro 14ft", "eta": "30 mins"},
-                {"name": "Ramesh Chawla", "phone": "+91-98450-11223", "vehicle": "Mahindra Bolero", "eta": "15 mins"}
-            ]
-            import random
-            driver = random.choice(drivers)
+            # Calculate payout using estimation engine
+            est = calculate_price_estimate(crop_name, quantity_quintals, quality_grade)
+            payout = est["estimated_payout"]
 
-            ticket = LogisticsTicket(
+            order = MandiOrder(
                 farmer_id=farmer_id,
-                commodity=commodity.title(),
-                weight=weight,
-                target_destination=target_destination,
-                tracking_status="Booked",
-                tracking_id=tracking_id
+                crop_name=crop_name.title(),
+                quantity_quintals=quantity_quintals,
+                target_mandi=target_mandi,
+                estimated_payout=payout,
+                status="In Transit",
+                transit_lat=19.99, # Nashik lat
+                transit_lng=73.78  # Nashik lng
             )
-            db.add(ticket)
+            db.add(order)
             db.commit()
-            db.refresh(ticket)
+            db.refresh(order)
 
             return {
                 "status": "success",
-                "ticket_id": ticket.id,
-                "commodity": ticket.commodity,
-                "weight": ticket.weight,
-                "destination": ticket.target_destination,
-                "tracking_id": ticket.tracking_id,
-                "status": ticket.tracking_status,
-                "driver_name": driver["name"],
-                "driver_phone": driver["phone"],
-                "driver_vehicle": driver["vehicle"],
-                "eta": driver["eta"]
+                "order_id": order.id,
+                "crop": order.crop_name,
+                "quantity": order.quantity_quintals,
+                "destination": order.target_mandi,
+                "payout": order.estimated_payout,
+                "transit_status": order.status,
+                "coordinates": {"lat": order.transit_lat, "lng": order.transit_lng}
             }
 
-        # --- Inject Dynamic Context into System Instructions ---
-        farmer_context = (
-            f"Logged-in Farmer Profile Context:\n"
-            f"- Full Name: {farmer.full_name}\n"
+        def get_order_tracking_details(order_id: int) -> dict:
+            """
+            Tracks active shipments. Shifts the simulated GPS coordinates 15% closer to the target APMC destination on successive calls.
+            """
+            logger.info(f"[Tool: get_order_tracking_details] Scoped to farmer {farmer_id}: tracking order {order_id}")
+            order = db.query(MandiOrder).filter(MandiOrder.id == order_id, MandiOrder.farmer_id == farmer_id).first()
+            if not order:
+                return {"status": "error", "message": f"Logistics ticket {order_id} not found."}
+
+            dest_coords = MANDI_COORDINATES.get(order.target_mandi, (19.03, 73.02))
+            dest_lat, dest_lng = dest_coords
+
+            if order.status == "In Transit":
+                d_lat = dest_lat - order.transit_lat
+                d_lng = dest_lng - order.transit_lng
+                distance = (d_lat**2 + d_lng**2)**0.5
+
+                if distance < 0.05:
+                    order.status = "Delivered"
+                    order.transit_lat = dest_lat
+                    order.transit_lng = dest_lng
+                else:
+                    # Move 15% closer
+                    order.transit_lat += d_lat * 0.15
+                    order.transit_lng += d_lng * 0.15
+                
+                db.commit()
+                db.refresh(order)
+
+            # Calculate progress percentage from Nashik (19.99, 73.78)
+            d_total = ((dest_lat - 19.99)**2 + (dest_lng - 73.78)**2)**0.5
+            d_current = ((dest_lat - order.transit_lat)**2 + (dest_lng - order.transit_lng)**2)**0.5
+            
+            progress = 100.0 if order.status == "Delivered" else max(0.0, min(95.0, (1 - d_current / d_total) * 100.0))
+
+            return {
+                "status": "success",
+                "order_id": order.id,
+                "crop": order.crop_name,
+                "mandi": order.target_mandi,
+                "status_label": order.status,
+                "progress_percent": round(progress, 1),
+                "current_location": {"lat": round(order.transit_lat, 4), "lng": round(order.transit_lng, 4)},
+                "destination_location": {"lat": dest_lat, "lng": dest_lng}
+            }
+
+        # --- Setup Context Profile Prompt ---
+        lang = farmer.preferred_language.capitalize()
+        context_prompt = (
+            f"Farmer Context:\n"
+            f"- Name: {farmer.full_name}\n"
             f"- State: {farmer.state}\n"
-            f"- Preferred Language: {farmer.preferred_language}\n"
-            f"- Land Size: {farmer.land_size_acres} Acres\n\n"
-            f"Instructions:\n"
-            f"1. You must personalize agricultural recommendations based on {farmer.state} and farm size {farmer.land_size_acres} acres.\n"
-            f"2. Translate your `localized_text_summary` into the farmer's preferred language ({farmer.preferred_language}). If preferred language is Hindi, use Hindi/Hinglish; if Marathi, use Marathi/Hinglish, etc.\n"
-            f"3. Run scoped database tools before returning. Do not invent stock levels or prices without calling tools.\n"
-            f"4. Select appropriate target_ui_tab: 'Mandi', 'Weather', 'Inventory', or 'Voice Assistant'."
+            f"- Preferred Language: {lang}\n"
+            f"- Onboarded Farm: {farmer.land_size_acres} Acres\n\n"
+            f"Directives:\n"
+            f"1. Pre-calculate payout estimates using tools prior to booking lots.\n"
+            f"2. Scopes all transactions to Farmer ID {farmer_id}.\n"
+            f"3. Write the `localization_summary` in the preferred language ({lang}). If Hindi, use Hinglish/Hindi; if Marathi, use Marathi/Hinglish, etc.\n"
+            f"4. Select target_ui_tab: 'Mandi', 'Weather', 'Inventory', or 'Voice Assistant'."
         )
 
         google_creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -234,29 +326,26 @@ async def execute_context_agent_loop(query_text: str, farmer_id: int) -> KrishiS
             try:
                 config = LocalAgentConfig(
                     model="gemini-3.5-flash",
-                    tools=[query_mandi_prices, update_inventory, log_transportation],
+                    tools=[calculate_price_estimate, book_mandi_order, get_order_tracking_details],
                     response_schema=KrishiSyncPayload,
                     system_instructions=(
-                        "You are KrishiSync, a stateful personalized ERP intelligence orchestrator. "
-                        f"{farmer_context}"
+                        "You are KrishiSync Hackathon Core. You run scoped SQL tools for Mandi bookings, price estimations, and GPS tracking.\n"
+                        f"{context_prompt}"
                     )
                 )
                 async with Agent(config) as agent:
-                    response = await agent.chat(query_text)
+                    response = await agent.chat(query)
                     payload: KrishiSyncPayload = await response.structured_output()
                     return payload
             except Exception as e:
-                logger.error(f"Antigravity SDK execution error: {e}. Falling back to emulation.")
+                logger.error(f"Antigravity Agent failed: {e}. Emulating local parse...")
 
-        # --- Local High-Fidelity Context Emulation Fallback ---
-        logger.info("Executing context-aware local emulation parser...")
-        text_lower = query_text.lower()
-        
-        # Determine language translations
-        lang = farmer.preferred_language.lower()
-        
-        # 1. Mandi Prices
-        if any(w in text_lower for w in ["mandi", "price", "rate", "भाव", "दाम", "रेट"]):
+        # --- Emulation Fallback ---
+        logger.info("Executing contextual local emulation engine...")
+        text_lower = query.lower()
+
+        # 1. Price Estimation Intent
+        if any(w in text_lower for w in ["estimate", "calculate", "value", "दाम", "मूल्य", "हिसाब"]):
             crop = "Onion"
             if "tomato" in text_lower or "टमाटर" in text_lower:
                 crop = "Tomato"
@@ -264,134 +353,148 @@ async def execute_context_agent_loop(query_text: str, farmer_id: int) -> KrishiS
                 crop = "Wheat"
             elif "cotton" in text_lower or "कपास" in text_lower:
                 crop = "Cotton"
-            elif "potato" in text_lower or "आलू" in text_lower:
-                crop = "Potato"
-                
-            res = query_mandi_prices(crop)
-            
-            # Formulate localized summary
-            if lang == "hindi":
-                summary = f"{farmer.full_name} bhaiya, {res.get('crop')} ke liye sabse accha rate {res.get('best_market')} mandi me ₹{res.get('best_price')}/quintal chal raha hai."
-            elif lang == "marathi":
-                summary = f"{farmer.full_name} bhau, {res.get('crop')} cha changla bhav {res.get('best_market')} mandi madhye ₹{res.get('best_price')}/quintal aahe."
-            else:
-                summary = f"Hello {farmer.full_name}, best market rate for {res.get('crop')} is ₹{res.get('best_price')}/quintal at {res.get('best_market')}."
-
-            return KrishiSyncPayload(
-                target_ui_tab="Mandi",
-                data=res,
-                localized_text_summary=summary
-            )
-            
-        # 2. Inventory Management
-        elif any(w in text_lower for w in ["inventory", "urea", "fertilizer", "seed", "compost", "खाद", "यूरिया", "बीज"]):
-            item = "Urea Fertilizer"
-            if "npk" in text_lower:
-                item = "NPK Fertilizer"
-            elif "seed" in text_lower or "बीज" in text_lower:
-                item = "Wheat Seeds"
-            elif "compost" in text_lower or "खाद" in text_lower:
-                item = "Organic Compost"
 
             import re
             nums = re.findall(r'\d+', text_lower)
-            change = float(nums[0]) if nums else 5.0
+            qty = float(nums[0]) if nums else 10.0
             
-            if any(w in text_lower for w in ["use", "deduct", "reduce", "remove", "निकाला", "घटाएं"]):
-                change = -change
-                
-            res = update_inventory(item, change)
+            grade = "Standard"
+            if "premium" in text_lower or "quality" in text_lower or "बढ़िया" in text_lower:
+                grade = "Premium"
+            elif "fair" in text_lower or "खराब" in text_lower:
+                grade = "Fair"
+
+            res = calculate_price_estimate(crop, qty, grade)
             
-            direction = "jodi gayi" if change > 0 else "nikali gayi"
-            if lang == "marathi":
-                direction = "keli" if change > 0 else "kadhli"
-                summary = f"Inventory update zala. {res['item_name']} che {abs(change)} {res['unit']} {direction} aahet. Navin stock: {res['quantity']}."
-            elif lang == "hindi":
-                summary = f"Stock update safal! {res['item_name']} ke {abs(change)} {res['unit']} {direction} hain. Naya stock total: {res['quantity']}."
+            if lang == "Hindi":
+                summary = f"{farmer.full_name} ji, {qty} quintal {crop} ({grade} quality) ka anumanit payout ₹{res['estimated_payout']:,} hoga (₹{res['rate_per_quintal']}/q rate)."
+            elif lang == "Marathi":
+                summary = f"{farmer.full_name} bhau, {qty} quintal {crop} ({grade}) cha andaji payout ₹{res['estimated_payout']:,} hoil."
             else:
-                summary = f"Inventory updated successfully. {abs(change)} {res['unit']} of {res['item_name']} adjusted. New stock level: {res['quantity']}."
+                summary = f"Hello {farmer.full_name}, estimated payout for {qty} quintals of {crop} ({grade}) is ₹{res['estimated_payout']:,}."
 
             return KrishiSyncPayload(
-                target_ui_tab="Inventory",
-                data=res,
-                localized_text_summary=summary
+                target_ui_tab="Mandi",
+                data_payload=res,
+                localization_summary=summary
             )
 
-        # 3. Logistics Transportation
-        elif any(w in text_lower for w in ["book", "transport", "send", "dispatch", "truck", "गाड़ी", "ट्रक", "भेजें"]):
+        # 2. Book Order Intent
+        elif any(w in text_lower for w in ["book", "lot", "dispatch", "send", "भेजें", "बुक", "ऑर्डर"]):
             crop = "Onion"
             if "tomato" in text_lower or "टमाटर" in text_lower:
                 crop = "Tomato"
             elif "wheat" in text_lower or "गेहूं" in text_lower:
                 crop = "Wheat"
                 
-            dest = "Mumbai APMC"
-            if "delhi" in text_lower or "दिल्ली" in text_lower:
-                dest = "Delhi APMC"
-            elif "pune" in text_lower or "पुणे" in text_lower:
-                dest = "Pune APMC"
-                
             import re
             nums = re.findall(r'\d+', text_lower)
-            qty = f"{nums[0]} bags" if nums else "50 bags"
+            qty = float(nums[0]) if nums else 20.0
             
-            res = log_transportation(crop, qty, dest)
+            mandi = "Mumbai APMC (Vashi)"
+            if "delhi" in text_lower or "azadpur" in text_lower:
+                mandi = "Azadpur APMC (Delhi)"
+            elif "kota" in text_lower:
+                mandi = "Kota APMC (Rajasthan)"
+            elif "pune" in text_lower:
+                mandi = "Pune APMC"
+
+            res = book_mandi_order(crop, qty, mandi, "Standard")
             
-            if lang == "hindi":
-                summary = f"Transport ticket book ho gaya hai. Driver {res['driver_name']} ({res['driver_vehicle']}) next {res['eta']} me pahuchega. Tracking ID: {res['tracking_id']}."
-            elif lang == "marathi":
-                summary = f"Transport ticket book zale aahe. Driver {res['driver_name']} ({res['driver_vehicle']}) {res['eta']} madhye yeil. Tracking ID: {res['tracking_id']}."
+            if lang == "Hindi":
+                summary = f"Mandi order book ho gaya! {qty} quintal {crop} ko {mandi} bhejne ka transit booking order ID {res['order_id']} hai. Estimated payout: ₹{res['payout']:,}."
+            elif lang == "Marathi":
+                summary = f"Mandi order book zala aahe! {qty} quintal {crop} la {mandi} pathvinyacha ticket ID {res['order_id']} aahe."
             else:
-                summary = f"Logistics booked. Driver {res['driver_name']} is arriving in {res['eta']}. Tracking ID is {res['tracking_id']}."
+                summary = f"Successfully booked lot. order ID is {res['order_id']} for shipping {qty} quintals of {crop} to {mandi}."
 
             return KrishiSyncPayload(
-                target_ui_tab="Inventory",
-                data=res,
-                localized_text_summary=summary
+                target_ui_tab="Mandi",
+                data_payload=res,
+                localization_summary=summary
             )
 
-        # 4. Localized Weather
+        # 3. Track Order Intent
+        elif any(w in text_lower for w in ["track", "shipment", "telemetry", "where", "पता", "ट्रैक", "गाड़ी"]):
+            import re
+            nums = re.findall(r'\d+', text_lower)
+            order_id = int(nums[0]) if nums else None
+            
+            if not order_id:
+                # Get latest order
+                latest = db.query(MandiOrder).filter(MandiOrder.farmer_id == farmer_id).order_by(MandiOrder.id.desc()).first()
+                if latest:
+                    order_id = latest.id
+            
+            if not order_id:
+                return KrishiSyncPayload(
+                    target_ui_tab="Mandi",
+                    data_payload={"status": "error", "message": "No active orders found to track."},
+                    localization_summary="Aapka koi active transit booking nahi mila."
+                )
+
+            res = get_order_tracking_details(order_id)
+            
+            if lang == "Hindi":
+                summary = f"Order ID {order_id} tracking status: {res['status_label']}. Gadi abhi latitude {res['current_location']['lat']}, longitude {res['current_location']['lng']} par hai ({res['progress_percent']}% rasta tay kiya)."
+            elif lang == "Marathi":
+                summary = f"Order ID {order_id} cha status: {res['status_label']}. Gadi sadhya lat {res['current_location']['lat']}, lng {res['current_location']['lng']} var aahe."
+            else:
+                summary = f"Order {order_id} tracking detail: {res['status_label']}. Current location: ({res['current_location']['lat']}, {res['current_location']['lng']}). Progress: {res['progress_percent']}%."
+
+            return KrishiSyncPayload(
+                target_ui_tab="Mandi",
+                data_payload=res,
+                localization_summary=summary
+            )
+
+        # 4. Fallback Weather Advisory
         import random
-        temp = random.randint(28, 33)
-        humidity = random.randint(75, 90)
+        temp = random.randint(28, 34)
+        humidity = random.randint(70, 90)
+        advisories = {
+            "Maharashtra": "Heavy rain forecast for Nashik/Pune. Keep drainage lines open in Tomato fields.",
+            "Gujarat": "Dry weather expected. Monitor cotton crops for whitefly infestation.",
+            "Rajasthan": "Hot winds. Maintain soil moisture levels by light evening watering."
+        }
+        adv = advisories.get(farmer.state, "Scattered monsoons expected. Safe storage of harvested grains advised.")
         
-        weather_alert = {
-            "status": "success",
+        weather_payload = {
             "temperature": f"{temp}°C",
             "humidity": f"{humidity}%",
-            "forecast": "Light monsoon rain",
-            "state_warning": f"Alert for {farmer.state}: Fungal hazard due to persistent humidity."
+            "alert": "YELLOW WARNING",
+            "pest_advisory": adv
         }
         
-        if lang == "hindi":
-            summary = f"{farmer.full_name} ji, {farmer.state} me abhi taapman {temp}°C hai aur humidity {humidity}% hai. Barish ke aasar hain."
-        elif lang == "marathi":
-            summary = f"{farmer.full_name} bhau, {farmer.state} madhye taapman {temp}°C aahe aani paus padnyachi shakyata aahe."
+        if lang == "Hindi":
+            summary = f"Weather update: {farmer.state} me abhi taapman {temp}°C hai. Advisory: {adv}"
+        elif lang == "Marathi":
+            summary = f"Weather update: {farmer.state} madhye taapman {temp}°C aahe. Advisory: {adv}"
         else:
-            summary = f"Hello {farmer.full_name}, current temperature in {farmer.state} is {temp}°C with high humidity ({humidity}%). Expect scattered showers."
+            summary = f"Weather status in {farmer.state} is {temp}°C. Alert warning: {adv}"
 
         return KrishiSyncPayload(
             target_ui_tab="Weather",
-            data=weather_alert,
-            localized_text_summary=summary
+            data_payload=weather_payload,
+            localization_summary=summary
         )
 
     finally:
         db.close()
 
-# --- Sarvam AI Audio Transcription helper ---
+# --- Sarvam AI Speech-to-Text Pipeline ---
 
-async def transcribe_audio_sarvam(audio_file_path: str) -> str:
+async def transcribe_speech_sarvam(audio_file_path: str) -> str:
     """
-    Transcribes audio stream via Sarvam speech-to-text API, translating to English.
+    Invokes Sarvam STT to translate multi-lingual Indian audio directly into English.
     """
-    sarvam_key = os.getenv("SARVAM_API_KEY")
-    if not sarvam_key or sarvam_key == "your-sarvam-api-key" or sarvam_key.strip() == "":
-        logger.warning("Sarvam AI key not configured. Using high-fidelity mock transcription.")
-        return "Show Mandi prices for Onion and tell me what the rate is."
+    key = os.getenv("SARVAM_API_KEY")
+    if not key or key == "your-sarvam-api-key" or key.strip() == "":
+        logger.warning("Sarvam API Key is empty. Defaulting to mock transcription.")
+        return "I need to book 15 quintals of onions to Mumbai APMC (Vashi)."
 
     url = "https://api.sarvam.ai/speech-to-text"
-    headers = {"api-subscription-key": sarvam_key}
+    headers = {"api-subscription-key": key}
     
     try:
         files = {
@@ -404,35 +507,34 @@ async def transcribe_audio_sarvam(audio_file_path: str) -> str:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, headers=headers, files=files, data=data, timeout=30)
             if response.status_code == 200:
-                result = response.json()
-                transcript = result.get("transcript", "").strip()
+                res_data = response.json()
+                transcript = res_data.get("transcript", "").strip()
                 if transcript:
                     return transcript
     except Exception as e:
-        logger.error(f"Sarvam API transcription error: {e}")
+        logger.error(f"Sarvam API failure: {e}")
         
-    return "Error: Could not transcribe voice stream."
+    return "Error: STT pipeline failed."
 
-# --- API Endpoints ---
+# --- API Router Endpoints ---
 
 @app.post("/api/auth/login")
 async def login(payload: LoginPayload):
-    """
-    Verifies if a farmer with the email exists.
-    Returns their profile or raises 401 if not registered.
-    """
     db = SessionLocal()
     try:
-        farmer = db.query(Farmer).filter(Farmer.email == payload.email.strip().lower()).first()
+        farmer = db.query(Farmer).filter(Farmer.phone_number == payload.phone_number.strip()).first()
         if not farmer:
-            raise HTTPException(status_code=401, detail="Email ID not found. Please register an account.")
-        
+            return {
+                "status": "registration_required",
+                "user_exists": False,
+                "message": "Phone number not registered. Please onboard profile."
+            }
         return {
             "status": "success",
             "user_exists": True,
             "profile": {
                 "id": farmer.id,
-                "email": farmer.email,
+                "phone_number": farmer.phone_number,
                 "full_name": farmer.full_name,
                 "state": farmer.state,
                 "preferred_language": farmer.preferred_language,
@@ -444,180 +546,130 @@ async def login(payload: LoginPayload):
 
 @app.post("/api/auth/register")
 async def register(payload: RegisterPayload):
-    """
-    Creates a new farmer profile and seeds initial stock levels for them.
-    """
     db = SessionLocal()
     try:
-        existing = db.query(Farmer).filter(Farmer.email == payload.email.strip().lower()).first()
+        existing = db.query(Farmer).filter(Farmer.phone_number == payload.phone_number.strip()).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Email ID is already registered.")
-
-        new_farmer = Farmer(
-            email=payload.email.strip().lower(),
+            raise HTTPException(status_code=400, detail="Phone number already registered.")
+            
+        farmer = Farmer(
+            phone_number=payload.phone_number.strip(),
             full_name=payload.full_name.strip(),
             state=payload.state.strip(),
             preferred_language=payload.preferred_language.strip(),
             land_size_acres=payload.land_size_acres
         )
-        db.add(new_farmer)
+        db.add(farmer)
         db.commit()
-        db.refresh(new_farmer)
+        db.refresh(farmer)
 
-        # Seed initial inventory items scoped to this new farmer
+        # Seed initial stock inputs scoped to this farmer
         db.add_all([
-            InventoryItem(farmer_id=new_farmer.id, item_name="Urea Fertilizer", quantity=50.0, unit="bags", status="In Stock"),
-            InventoryItem(farmer_id=new_farmer.id, item_name="NPK Fertilizer", quantity=30.0, unit="bags", status="In Stock"),
-            InventoryItem(farmer_id=new_farmer.id, item_name="Wheat Seeds", quantity=15.0, unit="bags", status="In Stock"),
-            InventoryItem(farmer_id=new_farmer.id, item_name="Organic Compost", quantity=100.0, unit="bags", status="In Stock")
+            InventoryItem(farmer_id=farmer.id, item_name="Urea Fertilizer", quantity=50.0, unit="bags"),
+            InventoryItem(farmer_id=farmer.id, item_name="NPK Fertilizer", quantity=30.0, unit="bags"),
+            InventoryItem(farmer_id=farmer.id, item_name="Wheat Seeds", quantity=10.0, unit="bags"),
+            InventoryItem(farmer_id=farmer.id, item_name="Organic Compost", quantity=100.0, unit="bags")
         ])
         db.commit()
 
         return {
             "status": "success",
             "profile": {
-                "id": new_farmer.id,
-                "email": new_farmer.email,
-                "full_name": new_farmer.full_name,
-                "state": new_farmer.state,
-                "preferred_language": new_farmer.preferred_language,
-                "land_size_acres": new_farmer.land_size_acres
+                "id": farmer.id,
+                "phone_number": farmer.phone_number,
+                "full_name": farmer.full_name,
+                "state": farmer.state,
+                "preferred_language": farmer.preferred_language,
+                "land_size_acres": farmer.land_size_acres
             }
         }
-    except HTTPException as he:
-        raise he
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
 
 @app.get("/api/dashboard-data")
-async def get_dashboard_data(farmer_id: int = Depends(get_active_farmer_id)):
-    """
-    Returns dashboard metrics (scoped inventory and transportation logs) for the active farmer session.
-    """
+async def get_dashboard_data(farmer_id: int = Depends(get_farmer_id_header)):
     db = SessionLocal()
     try:
-        # Verify farmer exists
         farmer = db.query(Farmer).filter(Farmer.id == farmer_id).first()
         if not farmer:
-            raise HTTPException(status_code=404, detail="Farmer session invalid.")
+            raise HTTPException(status_code=404, detail="Invalid farmer session.")
 
         inventory = db.query(InventoryItem).filter(InventoryItem.farmer_id == farmer_id).all()
-        logistics = db.query(LogisticsTicket).filter(LogisticsTicket.farmer_id == farmer_id).order_by(LogisticsTicket.id.desc()).all()
-        prices = db.query(MandiPrice).all()
-        
-        inventory_data = [
-            {"id": i.id, "item_name": i.item_name, "quantity": i.quantity, "unit": i.unit, "status": i.status, "last_updated": i.last_updated.isoformat() if i.last_updated else None}
-            for i in inventory
+        orders = db.query(MandiOrder).filter(MandiOrder.farmer_id == farmer_id).order_by(MandiOrder.id.desc()).all()
+        prices = db.query(MandiReference).all()
+
+        inventory_data = [{"id": i.id, "item_name": i.item_name, "quantity": i.quantity, "unit": i.unit} for i in inventory]
+        orders_data = [
+            {"id": o.id, "crop_name": o.crop_name, "quantity_quintals": o.quantity_quintals, "target_mandi": o.target_mandi, "estimated_payout": o.estimated_payout, "status": o.status, "lat": o.transit_lat, "lng": o.transit_lng}
+            for o in orders
         ]
-        
-        logistics_data = [
-            {"id": l.id, "commodity": l.commodity, "weight": l.weight, "destination": l.target_destination, "status": l.tracking_status, "tracking_id": l.tracking_id}
-            for l in logistics
-        ]
-        
-        prices_data = [
-            {"id": p.id, "crop_name": p.crop_name, "market_name": p.market_name, "price_per_quintal": p.price_per_quintal, "date": p.date}
-            for p in prices
-        ]
+        prices_data = [{"id": p.id, "mandi_name": p.mandi_name, "city": p.city, "base_price": p.base_price} for p in prices]
 
         import random
         temp = random.randint(28, 33)
         humidity = random.randint(75, 88)
 
-        weather_info = {
-            "temperature": f"{temp}°C",
+        weather = {
+            "temp": f"{temp}°C",
             "humidity": f"{humidity}%",
-            "forecast": "Isolated rain and thunderstorms",
             "alert": "YELLOW WARNING",
-            "pest_prevention_advisory": f"Humidity levels in {farmer.state} are high. Risk of blight or mildew. Ensure standing water is cleared from fields."
+            "advisory": f"High humidity in {farmer.state}. Clean standing water, risk of blights."
         }
 
         return {
             "status": "success",
             "inventory": inventory_data,
-            "logistics": logistics_data,
-            "market_prices": prices_data,
-            "weather": weather_info,
-            "farmer_profile": {
-                "name": farmer.full_name,
-                "state": farmer.state,
-                "language": farmer.preferred_language,
-                "land_size": farmer.land_size_acres
-            }
+            "mandi_orders": orders_data,
+            "market_references": prices_data,
+            "weather": weather
         }
     finally:
         db.close()
 
 @app.post("/api/query", response_model=KrishiSyncPayload)
-async def query_text(
-    payload: Dict[str, str],
-    farmer_id: int = Depends(get_active_farmer_id)
-):
-    """
-    Executes a personalized, context-aware query for the authenticated farmer session.
-    """
-    query = payload.get("query", "").strip()
-    if not query:
-        raise HTTPException(status_code=400, detail="Query string cannot be empty.")
-    try:
-        result = await execute_context_agent_loop(query, farmer_id)
-        return result
-    except Exception as e:
-        logger.error(f"Text query failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+async def query_text(payload: Dict[str, str], farmer_id: int = Depends(get_farmer_id_header)):
+    query_str = payload.get("query", "").strip()
+    if not query_str:
+        raise HTTPException(status_code=400, detail="Query cannot be empty.")
+    return await run_contextual_agent(query_str, farmer_id)
 
 @app.post("/api/voice", response_model=KrishiSyncPayload)
-async def query_voice(
+async def query_audio(
     file: UploadFile = File(...),
     custom_text_prompt: Optional[str] = Form(None),
-    farmer_id: int = Depends(get_active_farmer_id)
+    farmer_id: int = Depends(get_farmer_id_header)
 ):
-    """
-    Converts audio streams to text via Sarvam AI API and routes to context-injected agent loop.
-    """
-    logger.info(f"Uploading audio file from farmer {farmer_id}...")
     temp_dir = tempfile.gettempdir()
-    temp_file_path = os.path.join(temp_dir, f"voice_erp_{uuid.uuid4().hex}.wav")
-    
+    temp_file = os.path.join(temp_dir, f"audio_hack_{uuid.uuid4().hex}.wav")
     try:
-        with open(temp_file_path, "wb") as buffer:
+        with open(temp_file, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
-            
-        if custom_text_prompt and custom_text_prompt.strip():
-            transcription = custom_text_prompt
-        else:
-            transcription = await transcribe_audio_sarvam(temp_file_path)
-            
-        if "Error:" in transcription:
-            transcription = "Show Mandi prices for Onion and tell me what the rate is."
 
-        logger.info(f"Sending voice transcript to agent: '{transcription}'")
-        result = await execute_context_agent_loop(transcription, farmer_id)
-        return result
-        
-    except Exception as e:
-        logger.error(f"Voice query processing failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-        
+        if custom_text_prompt and custom_text_prompt.strip():
+            transcript = custom_text_prompt
+        else:
+            transcript = await transcribe_speech_sarvam(temp_file)
+
+        if "Error:" in transcript:
+            transcript = "I need to book 15 quintals of onions to Mumbai APMC (Vashi)."
+
+        logger.info(f"Audio Transcript: '{transcript}'")
+        return await run_contextual_agent(transcript, farmer_id)
     finally:
-        if os.path.exists(temp_file_path):
+        if os.path.exists(temp_file):
             try:
-                os.remove(temp_file_path)
-            except Exception as ex:
-                logger.warning(f"Could not remove temp file: {ex}")
+                os.remove(temp_file)
+            except Exception as e:
+                logger.warning(f"Could not remove temp file: {e}")
 
 @app.get("/", response_class=HTMLResponse)
-async def serve_dashboard():
-    """
-    Serves the dashboard index page.
-    """
+async def serve_index():
     index_path = os.path.join(os.path.dirname(__file__), "index.html")
     if not os.path.exists(index_path):
         return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
-        
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
     return HTMLResponse(content=html)
