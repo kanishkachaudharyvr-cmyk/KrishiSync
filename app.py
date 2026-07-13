@@ -665,6 +665,18 @@ async def query_audio(
             except Exception as e:
                 logger.warning(f"Could not remove temp file: {e}")
 
+from fastapi.responses import FileResponse
+
+@app.get("/lush_green_farm_field.png")
+def get_farm_image():
+    # Return served local image file path
+    return FileResponse(os.path.join(os.path.dirname(__file__), "lush_green_farm_field.png"))
+
+@app.get("/indian_apmc_mandi_market.png")
+def get_mandi_image():
+    # Return served local image file path
+    return FileResponse(os.path.join(os.path.dirname(__file__), "indian_apmc_mandi_market.png"))
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_path = os.path.join(os.path.dirname(__file__), "index.html")

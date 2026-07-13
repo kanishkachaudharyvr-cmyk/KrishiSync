@@ -31,17 +31,92 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* Farm Background and Spotlight */
+        body {
+            background: radial-gradient(circle at 10% 20%, rgba(4, 120, 87, 0.15) 0%, transparent 40%), 
+                        radial-gradient(circle at 90% 80%, rgba(4, 120, 87, 0.1) 0%, transparent 40%), 
+                        #020617;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        body.light-theme {
+            background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 40%), 
+                        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%), 
+                        #f8fafc;
+            color: #0f172a;
+        }
+
+        /* Spotlight helper */
+        #spotlight-bg {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.8;
+            background: radial-gradient(circle 350px at var(--x, 0px) var(--y, 0px), rgba(16, 185, 129, 0.05), transparent 80%);
+            transition: opacity 0.3s;
+        }
+        body.light-theme #spotlight-bg {
+            background: radial-gradient(circle 350px at var(--x, 0px) var(--y, 0px), rgba(16, 185, 129, 0.08), transparent 80%);
+        }
+
         /* Glassmorphic Backdrop and Glows */
         .glass-panel {
             background: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(16, 185, 129, 0.15);
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s ease;
+        }
+
+        body.light-theme .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(16, 185, 129, 0.22);
+            box-shadow: 0 8px 32px 0 rgba(16, 185, 129, 0.06);
+            color: #0f172a;
         }
         
         .glass-panel-glow {
             border: 1px solid rgba(16, 185, 129, 0.4);
             box-shadow: 0 0 25px rgba(16, 185, 129, 0.25);
+        }
+
+        /* Text color variables overrides for light theme */
+        body.light-theme h2,
+        body.light-theme h3,
+        body.light-theme .text-slate-200,
+        body.light-theme .text-slate-300 {
+            color: #0f172a !important;
+        }
+        body.light-theme .text-slate-400 {
+            color: #475569 !important;
+        }
+        body.light-theme .bg-slate-900,
+        body.light-theme .bg-slate-900\/40,
+        body.light-theme .bg-slate-950,
+        body.light-theme .bg-slate-950\/60 {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+        body.light-theme input,
+        body.light-theme select {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+
+        /* Hover animations */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-3px);
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+        }
+        body.light-theme .card-hover:hover {
+            box-shadow: 0 16px 36px rgba(16, 185, 129, 0.12);
         }
 
         /* Webkit Scrollbars */
@@ -51,6 +126,9 @@
         }
         ::-webkit-scrollbar-track {
             background: rgba(15, 23, 42, 0.3);
+        }
+        body.light-theme ::-webkit-scrollbar-track {
+            background: rgba(226, 232, 240, 0.5);
         }
         ::-webkit-scrollbar-thumb {
             background: rgba(16, 185, 129, 0.3);
@@ -74,12 +152,19 @@
             0% { border-color: rgba(16, 185, 129, 1); box-shadow: 0 0 25px rgba(16, 185, 129, 0.7); }
             100% { border-color: rgba(16, 185, 129, 0.15); box-shadow: none; }
         }
+        body.light-theme @keyframes border-glow-fade {
+            0% { border-color: rgba(16, 185, 129, 1); box-shadow: 0 0 25px rgba(16, 185, 129, 0.3); }
+            100% { border-color: rgba(16, 185, 129, 0.22); box-shadow: none; }
+        }
         .animate-card-glow {
             animation: border-glow-fade 3s forwards ease-out;
         }
     </style>
 </head>
 <body class="h-full text-slate-100 flex flex-col font-sans overflow-x-hidden selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- SPOTLIGHT BACKGROUND -->
+    <div id="spotlight-bg"></div>
 
     <!-- PHONE AUTH OVERLAY -->
     <div id="auth-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-lg transition-opacity duration-300">
@@ -172,7 +257,12 @@
             </div>
         </div>
         
-        <div class="flex items-center space-x-6 text-sm text-slate-400">
+        <div class="flex items-center space-x-4 text-sm text-slate-400">
+            <!-- Theme Toggle Button -->
+            <button onclick="toggleTheme()" class="p-2 bg-slate-900/60 border border-slate-800 rounded-xl text-emerald-400 hover:text-emerald-300 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center" title="Toggle Light/Dark Theme">
+                <i id="theme-icon" class="fa-solid fa-moon"></i>
+            </button>
+
             <!-- Active Profile Block -->
             <div id="header-profile" class="hidden md:flex items-center space-x-3 bg-slate-900/60 border border-slate-800 rounded-full py-1.5 pl-3 pr-4 text-xs">
                 <i class="fa-solid fa-user-circle text-emerald-400 text-base"></i>
@@ -196,7 +286,7 @@
         <div class="col-span-1 lg:col-span-5 flex flex-col space-y-6">
             
             <!-- SECTION 1: Crop Health & Weather -->
-            <section id="weather-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 flex flex-col relative overflow-hidden group">
+            <section id="weather-section" class="glass-panel card-hover rounded-3xl p-6 transition-all duration-300 flex flex-col relative overflow-hidden group">
                 <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
                 
                 <div class="flex justify-between items-start mb-4">
@@ -207,6 +297,9 @@
                         <h2 class="text-lg font-bold text-slate-200">Crop Health & Weather</h2>
                     </div>
                 </div>
+
+                <!-- Generated Real Image -->
+                <img src="/lush_green_farm_field.png" alt="Lush Farm Field" class="w-full h-28 object-cover rounded-2xl mb-4 border border-emerald-500/10 shadow-md">
 
                 <!-- Weather metrics -->
                 <div class="grid grid-cols-2 gap-4 mb-5">
@@ -242,7 +335,7 @@
             </section>
 
             <!-- SECTION 2: Inventory Stock Tracker -->
-            <section id="inventory-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 flex-1 flex flex-col group relative overflow-hidden">
+            <section id="inventory-section" class="glass-panel card-hover rounded-3xl p-6 transition-all duration-300 flex-1 flex flex-col group relative overflow-hidden">
                 <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all duration-500"></div>
 
                 <div class="flex justify-between items-start mb-4">
@@ -264,10 +357,10 @@
         <div class="col-span-1 lg:col-span-7 flex flex-col space-y-6">
             
             <!-- SECTION 3: Mandi Price Estimator & Calculator -->
-            <section id="mandi-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative group overflow-hidden">
+            <section id="mandi-section" class="glass-panel card-hover rounded-3xl p-6 transition-all duration-300 relative group overflow-hidden">
                 <div class="absolute -top-12 -left-12 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-all duration-500"></div>
 
-                <div class="flex justify-between items-start mb-6">
+                <div class="flex justify-between items-start mb-4">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
                             <i class="fa-solid fa-chart-line text-lg"></i>
@@ -278,6 +371,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Generated Real Image -->
+                <img src="/indian_apmc_mandi_market.png" alt="Mandi Wholesale Market" class="w-full h-24 object-cover rounded-2xl mb-4 border border-emerald-500/10 shadow-md">
 
                 <!-- Price Estimator Widget Form -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
@@ -328,7 +424,7 @@
             </section>
 
             <!-- SECTION 4: Live Logistics Dispatch & Geospatial Tracking -->
-            <section id="logistics-section" class="glass-panel rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group flex-1">
+            <section id="logistics-section" class="glass-panel card-hover rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group flex-1">
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center space-x-3">
                         <div class="p-2 bg-emerald-500/10 rounded-xl text-emerald-400">
@@ -1112,6 +1208,37 @@
                 appendDialogueBubble('assistant', "Voice translation failure.");
                 document.getElementById('assistant-status').innerText = "STT Error.";
             }
+        }
+
+        // Spotlight Mouse Effect Tracker
+        document.addEventListener('mousemove', (e) => {
+            const spotlight = document.getElementById('spotlight-bg');
+            if (spotlight) {
+                spotlight.style.setProperty('--x', `${e.clientX}px`);
+                spotlight.style.setProperty('--y', `${e.clientY}px`);
+            }
+        });
+
+        // Theme Toggle Handler
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            body.classList.toggle('light-theme');
+            
+            if (body.classList.contains('light-theme')) {
+                icon.className = 'fa-solid fa-sun text-amber-500';
+                localStorage.setItem('krishisync_theme', 'light');
+            } else {
+                icon.className = 'fa-solid fa-moon text-emerald-400';
+                localStorage.setItem('krishisync_theme', 'dark');
+            }
+        }
+
+        // Restore saved theme on load
+        const savedTheme = localStorage.getItem('krishisync_theme');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            document.getElementById('theme-icon').className = 'fa-solid fa-sun text-amber-500';
         }
     </script>
 </body>
