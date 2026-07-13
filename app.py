@@ -47,10 +47,10 @@ async def startup_event():
 # --- Pydantic Data Models ---
 
 class LoginPayload(BaseModel):
-    phone_number: str = Field(..., description="Farmer phone number to look up.")
+    email: str = Field(..., description="Farmer email ID to look up.")
 
 class RegisterPayload(BaseModel):
-    phone_number: str
+    email: str
     full_name: str
     state: str
     preferred_language: str
@@ -418,25 +418,21 @@ async def transcribe_audio_sarvam(audio_file_path: str) -> str:
 @app.post("/api/auth/login")
 async def login(payload: LoginPayload):
     """
-    Verifies if a farmer with the phone_number exists.
-    Returns their profile, or signals that registration is required.
+    Verifies if a farmer with the email exists.
+    Returns their profile or raises 401 if not registered.
     """
     db = SessionLocal()
     try:
-        farmer = db.query(Farmer).filter(Farmer.phone_number == payload.phone_number.strip()).first()
+        farmer = db.query(Farmer).filter(Farmer.email == payload.email.strip().lower()).first()
         if not farmer:
-            return {
-                "status": "registration_required",
-                "user_exists": false,
-                "message": "Phone number not registered. Please complete onboarding registration."
-            }
+            raise HTTPException(status_code=401, detail="Email ID not found. Please register an account.")
         
         return {
             "status": "success",
             "user_exists": True,
             "profile": {
                 "id": farmer.id,
-                "phone_number": farmer.phone_number,
+                "email": farmer.email,
                 "full_name": farmer.full_name,
                 "state": farmer.state,
                 "preferred_language": farmer.preferred_language,
@@ -453,12 +449,12 @@ async def register(payload: RegisterPayload):
     """
     db = SessionLocal()
     try:
-        existing = db.query(Farmer).filter(Farmer.phone_number == payload.phone_number.strip()).first()
+        existing = db.query(Farmer).filter(Farmer.email == payload.email.strip().lower()).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Phone number is already registered.")
+            raise HTTPException(status_code=400, detail="Email ID is already registered.")
 
         new_farmer = Farmer(
-            phone_number=payload.phone_number.strip(),
+            email=payload.email.strip().lower(),
             full_name=payload.full_name.strip(),
             state=payload.state.strip(),
             preferred_language=payload.preferred_language.strip(),
@@ -481,13 +477,15 @@ async def register(payload: RegisterPayload):
             "status": "success",
             "profile": {
                 "id": new_farmer.id,
-                "phone_number": new_farmer.phone_number,
+                "email": new_farmer.email,
                 "full_name": new_farmer.full_name,
                 "state": new_farmer.state,
                 "preferred_language": new_farmer.preferred_language,
                 "land_size_acres": new_farmer.land_size_acres
             }
         }
+    except HTTPException as he:
+        raise he
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")

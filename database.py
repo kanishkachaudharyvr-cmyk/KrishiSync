@@ -9,7 +9,7 @@ class Farmer(Base):
     __tablename__ = "farmers"
     
     id = Column(Integer, primary_key=True, index=True)
-    phone_number = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
     full_name = Column(String, nullable=False)
     state = Column(String, nullable=False)
     preferred_language = Column(String, default="en")

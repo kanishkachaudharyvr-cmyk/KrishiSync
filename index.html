@@ -99,14 +99,17 @@
                 <span id="auth-error-text">Authentication Error details...</span>
             </div>
 
-            <!-- Form Step 1: Login Phone Check -->
+            <!-- Tabs -->
+            <div class="flex border-b border-slate-800 mb-6">
+                <button id="tab-login" onclick="showLoginStep()" class="w-1/2 pb-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-400 transition-all duration-200">Login</button>
+                <button id="tab-register" onclick="showRegisterStep()" class="w-1/2 pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all duration-200">Register</button>
+            </div>
+
+            <!-- Form Step 1: Login Check -->
             <div id="auth-step-login" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Phone Number</label>
-                    <div class="flex items-center bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 focus-within:border-emerald-500">
-                        <span class="text-slate-500 text-sm font-semibold mr-2">+91</span>
-                        <input id="auth-phone" type="tel" placeholder="9876543210" class="bg-transparent text-sm w-full focus:outline-none text-slate-100 font-mono tracking-wider">
-                    </div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Email ID</label>
+                    <input id="auth-email" type="email" placeholder="e.g. farmer@krishisync.com" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-100 font-mono">
                 </div>
                 <button onclick="handleAuthLogin()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200 flex items-center justify-center space-x-2">
                     <span>Access ERP Account</span>
@@ -116,8 +119,9 @@
 
             <!-- Form Step 2: Farmer Onboarding Registration -->
             <div id="auth-step-register" class="hidden space-y-4">
-                <div class="bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] rounded-xl p-3 mb-2">
-                    <i class="fa-solid fa-user-plus mr-1"></i> Phone number not registered. Please onboard your farm to create a persistent profile.
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Email ID</label>
+                    <input id="reg-email" type="email" placeholder="e.g. farmer@krishisync.com" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-100 font-mono">
                 </div>
                 
                 <div>
@@ -153,9 +157,8 @@
                     <input id="reg-land" type="number" step="0.1" placeholder="e.g. 5.5" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm w-full focus:outline-none focus:border-emerald-500 text-slate-100">
                 </div>
 
-                <div class="flex space-x-2 pt-2">
-                    <button onclick="showLoginStep()" class="w-1/3 bg-slate-900 border border-slate-850 hover:bg-slate-850 text-slate-300 font-bold py-3 rounded-xl text-sm transition duration-200">Back</button>
-                    <button onclick="handleAuthRegister()" class="w-2/3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200">Register & Login</button>
+                <div class="pt-2">
+                    <button onclick="handleAuthRegister()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold py-3 rounded-xl text-sm transition duration-200">Register & Onboard Account</button>
                 </div>
             </div>
         </div>
@@ -487,12 +490,18 @@
             document.getElementById('auth-step-login').classList.remove('hidden');
             document.getElementById('auth-step-register').classList.add('hidden');
             document.getElementById('auth-error-banner').classList.add('hidden');
+            
+            document.getElementById('tab-login').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-400 transition-all duration-200";
+            document.getElementById('tab-register').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all duration-200";
         }
 
         function showRegisterStep() {
             document.getElementById('auth-step-login').classList.add('hidden');
             document.getElementById('auth-step-register').classList.remove('hidden');
             document.getElementById('auth-error-banner').classList.add('hidden');
+            
+            document.getElementById('tab-login').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition-all duration-200";
+            document.getElementById('tab-register').className = "w-1/2 pb-3 font-semibold text-sm border-b-2 border-emerald-500 text-emerald-400 transition-all duration-200";
         }
 
         function showAuthError(message) {
@@ -503,9 +512,9 @@
         }
 
         async function handleAuthLogin() {
-            const phone = document.getElementById('auth-phone').value.trim();
-            if (!phone || phone.length < 10) {
-                showAuthError("Please enter a valid 10-digit phone number.");
+            const email = document.getElementById('auth-email').value.trim();
+            if (!email || !email.includes('@')) {
+                showAuthError("Please enter a valid Email ID.");
                 return;
             }
 
@@ -513,19 +522,20 @@
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone_number: phone })
+                    body: JSON.stringify({ email: email })
                 });
-                const res = await response.json();
                 
+                if (!response.ok) {
+                    const errRes = await response.json();
+                    showAuthError(errRes.detail || "Email ID not found. Please click Register to onboarding your farm.");
+                    return;
+                }
+                
+                const res = await response.json();
                 if (res.status === 'success') {
-                    // Logged in successfully
                     saveSessionAndBoot(res.profile);
-                } else if (res.status === 'registration_required') {
-                    // Navigate to onboarding steps
-                    showRegisterStep();
-                    document.getElementById('reg-name').focus();
                 } else {
-                    showAuthError(res.detail || "Authentication check failed.");
+                    showAuthError("Authentication check failed.");
                 }
             } catch (err) {
                 console.error(err);
@@ -534,14 +544,14 @@
         }
 
         async function handleAuthRegister() {
-            const phone = document.getElementById('auth-phone').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
             const name = document.getElementById('reg-name').value.trim();
             const state = document.getElementById('reg-state').value;
             const lang = document.getElementById('reg-lang').value;
             const land = parseFloat(document.getElementById('reg-land').value);
 
-            if (!name || isNaN(land) || land <= 0) {
-                showAuthError("Please complete all onboarding fields.");
+            if (!email || !email.includes('@') || !name || isNaN(land) || land <= 0) {
+                showAuthError("Please complete all onboarding fields with a valid Email ID and land size.");
                 return;
             }
 
@@ -550,19 +560,25 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        phone_number: phone,
+                        email: email,
                         full_name: name,
                         state: state,
                         preferred_language: lang,
                         land_size_acres: land
                     })
                 });
+                
+                if (!response.ok) {
+                    const errRes = await response.json();
+                    showAuthError(errRes.detail || "Registration failed.");
+                    return;
+                }
+                
                 const res = await response.json();
-
                 if (res.status === 'success') {
                     saveSessionAndBoot(res.profile);
                 } else {
-                    showAuthError(res.detail || "Registration failed.");
+                    showAuthError("Registration failed.");
                 }
             } catch (err) {
                 console.error(err);
