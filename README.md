@@ -1,23 +1,37 @@
-# KrishiSync — Farm-Direct Produce from Indian Farmers
+# 🌾 KrishiSync
 
-**Live App**: [https://krishisync.lovable.app](https://krishisync.lovable.app)
+**Live Platform:** [https://krishisync.lovable.app](https://krishisync.lovable.app)
 
-Buy fresh produce straight from the farmer who grew it. No middlemen, transparent prices, same-day dispatch across India.
+KrishiSync is a next-generation, voice-enabled agricultural ERP and assistant platform designed to revolutionize the Indian farming supply chain. 
 
-**खेत की महक सीधे आपके घर तक**
+For decades, Indian farmers have suffered from systemic margin erosion. Middlemen and commission agents buy crops at rock-bottom prices from farmers, only to sell them to consumers at exorbitant markups. We are solving this problem by bridging the gap entirely. 
 
-## The farmer sets the price. You skip everyone in between.
+KrishiSync connects farmers directly to consumers, ensuring fair pay for the growers and fresh, affordable produce for the buyers.
 
-KrishiSync connects 12,400 verified farms directly to households and kitchens — one hop, fair margins, produce picked this week.
+## 🚀 The Vision
 
-- **+38% Average farmer earning, per quintal**: versus the same crop routed through an APMC mandi chain.
-- **Picked, not stored**: Median 19 hours from field to doorstep.
+Our mission spans all over India, breaking down geographical, technological, and linguistic barriers. We believe that technology should adapt to the user, not the other way around. 
 
-## Features
+By eliminating the APMC mandi chain and multi-hop cold storage markups, KrishiSync ensures:
+*   **For Farmers:** Maximum possible earnings, instant market access, and seamless logistics.
+*   **For Consumers:** Complete transparency, fair prices, and harvest-day freshness.
 
-- **One hop, not five**: Farmer lists the lot, you order it. No commission agent, no repacker, no cold-storage markup.
-- **Harvest-day listings**: Every lot shows the exact village and harvest date. Nothing older than four days stays live.
-- **Tracked dispatch**: Shared village routes keep delivery under ₹19 a crate, with live GPS on every trip.
-- **Grow with KrishiSync**: List a lot in Hindi, Marathi or Gujarati and reach buyers directly.
+## 🎙️ Voice-First & Multilingual Core
 
-*Fair price for the farmer. Fresh price for you.*
+India is incredibly diverse, and language should never be a barrier to trade. KrishiSync is built around a powerful, **voice-enabled AI assistant** capable of understanding and translating every regional language of India, alongside English.
+
+*   **For the Farmer:** No complex forms to fill out. A farmer can simply speak into their phone in their native language to list their harvest, set their prices, and automatically book transport logistics.
+*   **For the Consumer:** Buyers can navigate the market, search for produce, and place orders entirely through natural voice commands in their preferred language.
+
+## ⚙️ Tech Stack
+*   **Frontend:** React, TailwindCSS, Web Audio API
+*   **Backend:** FastAPI, Python
+*   **AI/Voice Integration:** Sarvam AI, Google Antigravity
+*   **Database:** SQLite / PostgreSQL
+
+## 🌟 Key Features
+- **Zero Middlemen:** One direct hop from the farm to the kitchen.
+- **Universal Voice Interface:** Speak to list. Speak to buy. Speak to ship.
+- **Pan-India Regional Support:** Real-time AI translation across India's local languages.
+- **Automated Transport Booking:** Integrated logistics handling for farmers.
+- **Harvest-Day Transparency:** Buyers see the exact village, farmer name, and harvest date before purchasing.
