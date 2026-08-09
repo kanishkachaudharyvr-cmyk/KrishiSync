@@ -1,32 +1,23 @@
-# React + TypeScript + Vite
+# KrishiSync — Farm-Direct Produce from Indian Farmers
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+**Live App**: [https://krishisync.lovable.app](https://krishisync.lovable.app)
 
-Currently, two official plugins are available:
+Buy fresh produce straight from the farmer who grew it. No middlemen, transparent prices, same-day dispatch across India.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**खेत की महक सीधे आपके घर तक**
 
-## React Compiler
+## The farmer sets the price. You skip everyone in between.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+KrishiSync connects 12,400 verified farms directly to households and kitchens — one hop, fair margins, produce picked this week.
 
-## Expanding the Oxlint configuration
+- **+38% Average farmer earning, per quintal**: versus the same crop routed through an APMC mandi chain.
+- **Picked, not stored**: Median 19 hours from field to doorstep.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Features
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+- **One hop, not five**: Farmer lists the lot, you order it. No commission agent, no repacker, no cold-storage markup.
+- **Harvest-day listings**: Every lot shows the exact village and harvest date. Nothing older than four days stays live.
+- **Tracked dispatch**: Shared village routes keep delivery under ₹19 a crate, with live GPS on every trip.
+- **Grow with KrishiSync**: List a lot in Hindi, Marathi or Gujarati and reach buyers directly.
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+*Fair price for the farmer. Fresh price for you.*

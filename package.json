@@ -1,7 +1,9 @@
 {
-  "name": "frontend",
+  "name": "krishisync",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Buy fresh produce straight from the farmer who grew it. No middlemen, transparent prices, same-day dispatch across India.",
+  "keywords": ["krishisync", "farmer", "agriculture", "direct to consumer", "fresh produce", "india", "apmc alternative"],
   "type": "module",
   "scripts": {
     "dev": "vite",
