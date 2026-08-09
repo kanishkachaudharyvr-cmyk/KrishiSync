@@ -7,25 +7,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#f7faf8',
+        background: '#f3f8f4',
         foreground: '#0f172a',
         primary: {
-          DEFAULT: '#10b981',
+          DEFAULT: '#1b8354',
           foreground: '#ffffff',
         },
         secondary: {
-          DEFAULT: '#f1f5f9',
-          foreground: '#334155',
+          DEFAULT: '#e6ede8',
+          foreground: '#2f4f3e',
         },
         accent: {
-          DEFAULT: 'rgba(16, 185, 129, 0.08)',
-          foreground: '#059669',
+          DEFAULT: 'rgba(27, 131, 84, 0.08)',
+          foreground: '#1b8354',
         },
         harvest: {
           DEFAULT: '#f59e0b',
           foreground: '#ffffff',
         },
-        border: '#cbd5e1',
+        border: '#dbe5df',
         muted: {
           DEFAULT: '#f8fafc',
           foreground: '#64748b',
