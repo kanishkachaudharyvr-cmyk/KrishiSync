@@ -1,8 +1,7 @@
-__pycache__/
-*.pyc
-.env
-krishisync.db
-.vercel/
+*.db
 *.log
-
-.vercel
+__pycache__/
+.env
+.vercel/
+dist/
+node_modules/

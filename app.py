@@ -39,6 +39,8 @@ class Farmer(Base):
 
     inventory_items = relationship("InventoryItem", back_populates="farmer", cascade="all, delete-orphan")
     mandi_orders = relationship("MandiOrder", back_populates="farmer", cascade="all, delete-orphan")
+    marketplace_listings = relationship("MarketplaceListing", back_populates="farmer", cascade="all, delete-orphan")
+    d2c_orders = relationship("D2COrder", back_populates="farmer", cascade="all, delete-orphan")
 
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
@@ -65,6 +67,35 @@ class MandiOrder(Base):
     transit_lng = Column(Float, default=73.78)
 
     farmer = relationship("Farmer", back_populates="mandi_orders")
+
+class MarketplaceListing(Base):
+    __tablename__ = "marketplace_listings"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    crop_name = Column(String, nullable=False)
+    quantity_kg = Column(Float, nullable=False)
+    price_per_kg = Column(Float, nullable=False)
+    status = Column(String, default="Active")  # "Active" | "Sold Out"
+
+    farmer = relationship("Farmer", back_populates="marketplace_listings")
+    orders = relationship("D2COrder", back_populates="listing", cascade="all, delete-orphan")
+
+class D2COrder(Base):
+    __tablename__ = "d2c_orders"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("marketplace_listings.id", ondelete="CASCADE"), nullable=False)
+    farmer_id = Column(Integer, ForeignKey("farmers.id", ondelete="CASCADE"), nullable=False)
+    buyer_name = Column(String, nullable=False)
+    quantity_kg = Column(Float, nullable=False)
+    total_payment = Column(Float, nullable=False)
+    delivery_address = Column(String, nullable=False)
+    order_date = Column(DateTime, default=datetime.datetime.utcnow)
+    status = Column(String, default="Pending Dispatch")  # "Pending Dispatch" | "In Transit" | "Delivered"
+
+    listing = relationship("MarketplaceListing", back_populates="orders")
+    farmer = relationship("Farmer", back_populates="d2c_orders")
 
 class MandiReference(Base):
     __tablename__ = "mandi_references"
@@ -100,9 +131,32 @@ def init_db():
             ])
             db.commit()
             logger.info("Mandi pricing reference data seeded.")
+
+        # Seed mock farmer and direct listings
+        mock_farmer = db.query(Farmer).filter(Farmer.phone_number == "9999999999").first()
+        if not mock_farmer:
+            mock_farmer = Farmer(
+                phone_number="9999999999",
+                full_name="Rajesh Patel (Mock Seller)",
+                state="Maharashtra",
+                preferred_language="en",
+                land_size_acres=10.0
+            )
+            db.add(mock_farmer)
+            db.commit()
+            db.refresh(mock_farmer)
+
+        if db.query(MarketplaceListing).count() == 0:
+            db.add_all([
+                MarketplaceListing(farmer_id=mock_farmer.id, crop_name="Organic Onion", quantity_kg=1200.0, price_per_kg=35.0, status="Active"),
+                MarketplaceListing(farmer_id=mock_farmer.id, crop_name="Desi Tomato", quantity_kg=800.0, price_per_kg=25.0, status="Active"),
+                MarketplaceListing(farmer_id=mock_farmer.id, crop_name="Sharbati Wheat", quantity_kg=2500.0, price_per_kg=28.0, status="Active")
+            ])
+            db.commit()
+            logger.info("Direct-to-consumer mock listings seeded.")
     except Exception as e:
         db.rollback()
-        logger.error(f"Error seeding mandi reference: {e}")
+        logger.error(f"Error seeding database reference/mock data: {e}")
     finally:
         db.close()
 
@@ -137,6 +191,17 @@ class RegisterPayload(BaseModel):
     state: str
     preferred_language: str
     land_size_acres: float
+
+class CreateListingPayload(BaseModel):
+    crop_name: str
+    quantity_kg: float
+    price_per_kg: float
+
+class BuyListingPayload(BaseModel):
+    listing_id: int
+    buyer_name: str
+    quantity_kg: float
+    delivery_address: str
 
 class KrishiSyncPayload(BaseModel):
     target_ui_tab: str = Field(..., description="Tab to activate: 'Mandi', 'Weather', 'Inventory', or 'Voice Assistant'")
@@ -306,6 +371,70 @@ async def run_contextual_agent(query: str, farmer_id: int) -> KrishiSyncPayload:
                 "destination_location": {"lat": dest_lat, "lng": dest_lng}
             }
 
+        def create_direct_listing(crop_name: str, quantity_kg: float, price_per_kg: float) -> dict:
+            """
+            Lists a harvest crop offering in the direct-to-consumer marketplace, bypassing middleman mandi commissions.
+            """
+            logger.info(f"[Tool: create_direct_listing] Farmer {farmer_id} listing {quantity_kg}kg of {crop_name} at ₹{price_per_kg}/kg")
+            new_list = MarketplaceListing(
+                farmer_id=farmer_id,
+                crop_name=crop_name.title(),
+                quantity_kg=quantity_kg,
+                price_per_kg=price_per_kg,
+                status="Active"
+            )
+            db.add(new_list)
+            db.commit()
+            db.refresh(new_list)
+            return {
+                "status": "success",
+                "listing_id": new_list.id,
+                "crop": new_list.crop_name,
+                "quantity": new_list.quantity_kg,
+                "rate": new_list.price_per_kg,
+                "message": f"Successfully created direct marketplace listing for {quantity_kg}kg of {crop_name}."
+            }
+
+        def buy_direct_crop(listing_id: int, buyer_name: str, quantity_kg: float, address: str) -> dict:
+            """
+            Allows a consumer to purchase listed crops directly from a local farmer.
+            """
+            logger.info(f"[Tool: buy_direct_crop] Buyer {buyer_name} purchasing {quantity_kg}kg from listing {listing_id}")
+            listing = db.query(MarketplaceListing).filter(MarketplaceListing.id == listing_id).first()
+            if not listing:
+                return {"status": "error", "message": f"Listing {listing_id} not found."}
+            if listing.status != "Active":
+                return {"status": "error", "message": f"Listing {listing_id} is no longer active."}
+            if listing.quantity_kg < quantity_kg:
+                return {"status": "error", "message": f"Insufficient stock. Only {listing.quantity_kg}kg available."}
+
+            listing.quantity_kg -= quantity_kg
+            if listing.quantity_kg <= 0:
+                listing.status = "Sold Out"
+
+            total = listing.price_per_kg * quantity_kg
+            
+            new_order = D2COrder(
+                listing_id=listing.id,
+                farmer_id=listing.farmer_id,
+                buyer_name=buyer_name,
+                quantity_kg=quantity_kg,
+                total_payment=total,
+                delivery_address=address,
+                status="Pending Dispatch"
+            )
+            db.add(new_order)
+            db.commit()
+            db.refresh(new_order)
+
+            return {
+                "status": "success",
+                "order_id": new_order.id,
+                "total_payment": total,
+                "seller_name": listing.farmer.full_name,
+                "message": f"Successfully purchased {quantity_kg}kg directly from farmer {listing.farmer.full_name}."
+            }
+
         # --- Setup Context Profile Prompt ---
         lang = farmer.preferred_language.capitalize()
         context_prompt = (
@@ -326,10 +455,10 @@ async def run_contextual_agent(query: str, farmer_id: int) -> KrishiSyncPayload:
             try:
                 config = LocalAgentConfig(
                     model="gemini-3.5-flash",
-                    tools=[calculate_price_estimate, book_mandi_order, get_order_tracking_details],
+                    tools=[calculate_price_estimate, book_mandi_order, get_order_tracking_details, create_direct_listing, buy_direct_crop],
                     response_schema=KrishiSyncPayload,
                     system_instructions=(
-                        "You are KrishiSync Hackathon Core. You run scoped SQL tools for Mandi bookings, price estimations, and GPS tracking.\n"
+                        "You are KrishiSync Hackathon Core. You run scoped SQL tools for Mandi bookings, direct crop selling listings, price estimations, and GPS tracking.\n"
                         f"{context_prompt}"
                     )
                 )
@@ -448,7 +577,37 @@ async def run_contextual_agent(query: str, farmer_id: int) -> KrishiSyncPayload:
                 localization_summary=summary
             )
 
-        # 4. Fallback Weather Advisory
+        # 4. Direct Marketplace Listing Intent
+        elif any(w in text_lower for w in ["list", "direct", "marketplace", "consumer", "बेचना", "ग्राहक", "मार्केट", "विक्री"]):
+            crop = "Onion"
+            if "tomato" in text_lower or "टमाटर" in text_lower or "टोमॅटो" in text_lower:
+                crop = "Tomato"
+            elif "wheat" in text_lower or "गेहूं" in text_lower or "गहू" in text_lower:
+                crop = "Wheat"
+            elif "potato" in text_lower or "आलू" in text_lower or "बटाटा" in text_lower:
+                crop = "Potato"
+            
+            import re
+            nums = re.findall(r'\d+', text_lower)
+            qty = float(nums[0]) if len(nums) > 0 else 500.0
+            price = float(nums[1]) if len(nums) > 1 else 30.0
+
+            res = create_direct_listing(crop, qty, price)
+
+            if lang == "Hindi":
+                summary = f"Direct market me aapka {qty}kg {crop} ₹{price}/kg ke rate se list ho gaya hai! Listing ID: {res['listing_id']}. Middlemen brokers bypass ho chuke hain."
+            elif lang == "Marathi":
+                summary = f"Direct market madhye tumcha {qty}kg {crop} ₹{price}/kg chya dorane list zala aahe! Listing ID: {res['listing_id']}."
+            else:
+                summary = f"Direct marketplace listing created. Listing ID is {res['listing_id']} for selling {qty}kg of {crop} at ₹{price}/kg directly to buyers."
+
+            return KrishiSyncPayload(
+                target_ui_tab="Voice Assistant",
+                data_payload=res,
+                localization_summary=summary
+            )
+
+        # 5. Fallback Weather Advisory
         import random
         temp = random.randint(28, 34)
         humidity = random.randint(70, 90)
@@ -600,6 +759,8 @@ async def get_dashboard_data(farmer_id: int = Depends(get_farmer_id_header)):
         inventory = db.query(InventoryItem).filter(InventoryItem.farmer_id == farmer_id).all()
         orders = db.query(MandiOrder).filter(MandiOrder.farmer_id == farmer_id).order_by(MandiOrder.id.desc()).all()
         prices = db.query(MandiReference).all()
+        listings = db.query(MarketplaceListing).all()
+        d2c_orders = db.query(D2COrder).filter(D2COrder.farmer_id == farmer_id).order_by(D2COrder.id.desc()).all()
 
         inventory_data = [{"id": i.id, "item_name": i.item_name, "quantity": i.quantity, "unit": i.unit} for i in inventory]
         orders_data = [
@@ -607,6 +768,15 @@ async def get_dashboard_data(farmer_id: int = Depends(get_farmer_id_header)):
             for o in orders
         ]
         prices_data = [{"id": p.id, "mandi_name": p.mandi_name, "city": p.city, "base_price": p.base_price} for p in prices]
+        
+        listings_data = [
+            {"id": l.id, "farmer_id": l.farmer_id, "farmer_name": l.farmer.full_name, "crop_name": l.crop_name, "quantity_kg": l.quantity_kg, "price_per_kg": l.price_per_kg, "status": l.status}
+            for l in listings
+        ]
+        d2c_orders_data = [
+            {"id": o.id, "listing_id": o.listing_id, "crop_name": o.listing.crop_name, "buyer_name": o.buyer_name, "quantity_kg": o.quantity_kg, "total_payment": o.total_payment, "delivery_address": o.delivery_address, "status": o.status}
+            for o in d2c_orders
+        ]
 
         import random
         temp = random.randint(28, 33)
@@ -624,6 +794,8 @@ async def get_dashboard_data(farmer_id: int = Depends(get_farmer_id_header)):
             "inventory": inventory_data,
             "mandi_orders": orders_data,
             "market_references": prices_data,
+            "marketplace_listings": listings_data,
+            "d2c_orders": d2c_orders_data,
             "weather": weather
         }
     finally:
@@ -685,6 +857,73 @@ async def serve_index():
     with open(index_path, "r", encoding="utf-8") as f:
         html = f.read()
     return HTMLResponse(content=html)
+
+@app.post("/api/marketplace/list")
+async def create_d2c_listing(payload: CreateListingPayload, farmer_id: int = Depends(get_farmer_id_header)):
+    db = SessionLocal()
+    try:
+        new_list = MarketplaceListing(
+            farmer_id=farmer_id,
+            crop_name=payload.crop_name.title(),
+            quantity_kg=payload.quantity_kg,
+            price_per_kg=payload.price_per_kg,
+            status="Active"
+        )
+        db.add(new_list)
+        db.commit()
+        db.refresh(new_list)
+        return {"status": "success", "listing_id": new_list.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+@app.post("/api/marketplace/buy")
+async def buy_d2c_listing(payload: BuyListingPayload):
+    db = SessionLocal()
+    try:
+        listing = db.query(MarketplaceListing).filter(MarketplaceListing.id == payload.listing_id).first()
+        if not listing:
+            raise HTTPException(status_code=404, detail="Crop listing not found.")
+        if listing.status != "Active":
+            raise HTTPException(status_code=400, detail="Crop listing is no longer active.")
+        if listing.quantity_kg < payload.quantity_kg:
+            raise HTTPException(status_code=400, detail=f"Insufficient stock. Only {listing.quantity_kg}kg available.")
+
+        # Deduct stock
+        listing.quantity_kg -= payload.quantity_kg
+        if listing.quantity_kg <= 0:
+            listing.status = "Sold Out"
+
+        total = listing.price_per_kg * payload.quantity_kg
+        
+        new_order = D2COrder(
+            listing_id=listing.id,
+            farmer_id=listing.farmer_id,
+            buyer_name=payload.buyer_name,
+            quantity_kg=payload.quantity_kg,
+            total_payment=total,
+            delivery_address=payload.delivery_address,
+            status="Pending Dispatch"
+        )
+        db.add(new_order)
+        db.commit()
+        db.refresh(new_order)
+        
+        return {
+            "status": "success",
+            "order_id": new_order.id,
+            "total_payment": total,
+            "message": f"Successfully purchased {payload.quantity_kg}kg directly from {listing.farmer.full_name}!"
+        }
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
