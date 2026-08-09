@@ -1,28 +1,16 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as RootRoute } from "./__root";
 import { useEffect, useState } from "react";
 import { CloudSun, Droplets, PackageCheck, Plus, Truck, TrendingUp } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { ListLotDialog } from "@/components/list-lot-dialog";
 import { earningsByWeek, farmerOrders, produce } from "@/data/market";
 
-export const Route = createFileRoute("/farmer")({
+export const Route = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/farmer",
   validateSearch: (search: Record<string, unknown>) => ({
     action: search["action"] === "list" ? ("list" as const) : undefined,
-  }),
-  head: () => ({
-    meta: [
-      { title: "Farmer Desk — Listings, Orders & Payouts | KrishiSync" },
-      {
-        name: "description",
-        content:
-          "Manage your lots, track direct orders and see payouts against mandi rates — the KrishiSync desk for farmers.",
-      },
-      { property: "og:title", content: "Farmer Desk — Listings, Orders & Payouts | KrishiSync" },
-      {
-        property: "og:description",
-        content: "Your lots, your rates, your buyers — all in one farmer dashboard.",
-      },
-    ],
   }),
   component: FarmerDesk,
 });

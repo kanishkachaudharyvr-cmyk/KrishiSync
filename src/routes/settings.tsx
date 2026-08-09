@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as RootRoute } from "./__root";
 import { useState } from "react";
 import { Check, Languages, ShoppingBasket, Sprout, UserRound } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
@@ -6,22 +7,9 @@ import { useRole } from "@/lib/role-context";
 import { useLanguage } from "@/lib/language-context";
 import { languages } from "@/lib/languages";
 
-export const Route = createFileRoute("/settings")({
-  head: () => ({
-    meta: [
-      { title: "Settings — Profile, Language & Preferences | KrishiSync" },
-      {
-        name: "description",
-        content:
-          "Manage your KrishiSync profile: switch between customer and farmer, set delivery or payout preferences, and change the app language.",
-      },
-      { property: "og:title", content: "Settings — Profile, Language & Preferences | KrishiSync" },
-      {
-        property: "og:description",
-        content: "Customer and farmer settings, plus a universal Indian-language switcher.",
-      },
-    ],
-  }),
+export const Route = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/settings",
   component: SettingsPage,
 });
 

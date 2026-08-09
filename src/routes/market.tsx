@@ -1,29 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createRoute } from "@tanstack/react-router";
+import { Route as RootRoute } from "./__root";
 import { useEffect, useMemo, useState } from "react";
 import { Mic, Search } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { ProduceCard } from "@/components/produce-card";
 import { categories, produce } from "@/data/market";
 
-export const Route = createFileRoute("/market")({
+export const Route = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/market",
   validateSearch: (search: Record<string, unknown>) => ({
     q: typeof search["q"] === "string" ? (search["q"] as string) : "",
     intent: search["intent"] === "buy" ? ("buy" as const) : undefined,
-  }),
-  head: () => ({
-    meta: [
-      { title: "Market — Fresh Lots Direct from Farms | KrishiSync" },
-      {
-        name: "description",
-        content:
-          "Browse live produce lots from verified Indian farms. Filter by vegetables, fruits, grains and dairy, and buy at the farmer's own price.",
-      },
-      { property: "og:title", content: "Market — Fresh Lots Direct from Farms | KrishiSync" },
-      {
-        property: "og:description",
-        content: "Live produce lots from verified Indian farms, priced by the farmer.",
-      },
-    ],
   }),
   component: Market,
 });

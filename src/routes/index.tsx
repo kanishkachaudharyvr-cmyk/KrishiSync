@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createRoute, Link } from "@tanstack/react-router";
+import { Route as RootRoute } from "./__root";
 import { ArrowRight, Banknote, Clock3, Route as RouteIcon, Truck } from "lucide-react";
 import heroFarm from "@/assets/hero-farm.jpg";
 import produceBasket from "@/assets/produce-basket.jpg";
@@ -8,22 +9,9 @@ import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { ProduceCard } from "@/components/produce-card";
 import { produce } from "@/data/market";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "KrishiSync — Farm-Direct Produce from Indian Farmers" },
-      {
-        name: "description",
-        content:
-          "Buy fresh produce straight from the farmer who grew it. No middlemen, transparent prices, same-day dispatch across India.",
-      },
-      { property: "og:title", content: "KrishiSync — Farm-Direct Produce from Indian Farmers" },
-      {
-        property: "og:description",
-        content: "Buy fresh produce straight from the farmer who grew it. No middlemen, transparent prices, same-day dispatch across India.",
-      },
-    ],
-  }),
+export const Route = createRoute({
+  getParentRoute: () => RootRoute,
+  path: "/",
   component: Home,
 });
 
