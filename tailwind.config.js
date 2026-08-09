@@ -7,32 +7,32 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#0b0f19',
-        foreground: '#f1f5f9',
+        background: '#f7faf8',
+        foreground: '#0f172a',
         primary: {
           DEFAULT: '#10b981',
-          foreground: '#0f172a',
+          foreground: '#ffffff',
         },
         secondary: {
-          DEFAULT: '#1e293b',
-          foreground: '#f1f5f9',
+          DEFAULT: '#f1f5f9',
+          foreground: '#334155',
         },
         accent: {
-          DEFAULT: '#10b98115',
-          foreground: '#34d399',
+          DEFAULT: 'rgba(16, 185, 129, 0.08)',
+          foreground: '#059669',
         },
         harvest: {
           DEFAULT: '#f59e0b',
           foreground: '#ffffff',
         },
-        border: '#1e293b',
+        border: '#cbd5e1',
         muted: {
-          DEFAULT: '#64748b',
-          foreground: '#94a3b8',
+          DEFAULT: '#f8fafc',
+          foreground: '#64748b',
         },
         card: {
-          DEFAULT: '#0f172a',
-          foreground: '#f1f5f9',
+          DEFAULT: '#ffffff',
+          foreground: '#0f172a',
         }
       },
       fontFamily: {
