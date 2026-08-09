@@ -7,6 +7,7 @@ import tempfile
 import shutil
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Depends
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
@@ -175,6 +176,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount React static assets
+assets_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist", "assets")
+if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 @app.on_event("startup")
 async def startup_event():
@@ -808,7 +814,7 @@ async def query_text(payload: Dict[str, str], farmer_id: int = Depends(get_farme
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
     return await run_contextual_agent(query_str, farmer_id)
 
-@app.post("/api/voice", response_model=KrishiSyncPayload)
+@app.post("/api/voice")
 async def query_audio(
     file: UploadFile = File(...),
     custom_text_prompt: Optional[str] = Form(None),
@@ -829,7 +835,34 @@ async def query_audio(
             transcript = "I need to book 15 quintals of onions to Mumbai APMC (Vashi)."
 
         logger.info(f"Audio Transcript: '{transcript}'")
-        return await run_contextual_agent(transcript, farmer_id)
+        payload = await run_contextual_agent(transcript, farmer_id)
+
+        # Map target UI tabs to React routes
+        to_route = "/"
+        action_type = "none"
+        tab = payload.target_ui_tab
+        if tab == "Mandi":
+            to_route = "/market"
+            action_type = "search"
+        elif tab == "Inventory":
+            to_route = "/farmer"
+            action_type = "sell"
+        elif tab == "Weather":
+            to_route = "/farmer"
+            action_type = "navigate"
+        elif tab == "Voice Assistant":
+            to_route = "/settings"
+            action_type = "navigate"
+
+        return {
+            "transcript": transcript,
+            "reply": payload.localization_summary,
+            "action": {
+                "type": action_type,
+                "to": to_route,
+                "query": transcript
+            }
+        }
     finally:
         if os.path.exists(temp_file):
             try:
@@ -849,14 +882,18 @@ def get_mandi_image():
     # Return served local image file path
     return FileResponse(os.path.join(os.path.dirname(__file__), "indian_apmc_mandi_market.png"))
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
+@app.get("/market")
+@app.get("/farmer")
+@app.get("/settings")
 async def serve_index():
-    index_path = os.path.join(os.path.dirname(__file__), "index.html")
-    if not os.path.exists(index_path):
-        return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
-    with open(index_path, "r", encoding="utf-8") as f:
-        html = f.read()
-    return HTMLResponse(content=html)
+    react_index = os.path.join(os.path.dirname(__file__), "frontend", "dist", "index.html")
+    if os.path.exists(react_index):
+        return FileResponse(react_index)
+    fallback_path = os.path.join(os.path.dirname(__file__), "index.html")
+    if os.path.exists(fallback_path):
+        return FileResponse(fallback_path)
+    return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
 @app.post("/api/marketplace/list")
 async def create_d2c_listing(payload: CreateListingPayload, farmer_id: int = Depends(get_farmer_id_header)):
